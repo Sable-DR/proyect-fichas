@@ -1,0 +1,4 @@
+node_modules/
+fichas.db
+dist/
+.DS_Store

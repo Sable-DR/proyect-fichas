@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Principal</title>
+    <style>
+        :root {
+            --bg-body: #f3f4f6;
+            --bg-card: white;
+            --text-main: #374151;
+            --border-input: #d1d5db;
+        }
+        body.dark-theme {
+            --bg-body: #111827;
+            --bg-card: #1f2937;
+            --text-main: #f9fafb;
+            --border-input: #4b5563;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        header {
+            background-color: var(--bg-card);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+        }
+        .btn-logout { background-color: #ef4444; }
+        .btn-logout:hover { background-color: #dc2626; }
+        .btn-primary { background-color: #3b82f6; width: 100%; margin-top: 10px; }
+        .btn-primary:hover { background-color: #2563eb; }
+
+        .container {
+            padding: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-input);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        textarea { resize: vertical; min-height: 100px; }
+
+        .fichas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .ficha-item {
+            background-color: var(--bg-card);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .ficha-item h3 { margin: 0 0 10px 0; font-size: 1.1rem; }
+        .ficha-item p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
+        .ficha-fecha { font-size: 0.75rem; color: #6b7280; margin-top: 10px; display: block; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="font-weight: bold;">Novedades en turno</div>
+        <button class="btn btn-logout" id="btn-logout">Cerrar Sesión</button>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h3>Nueva Ficha</h3>
+            <form id="form-ficha">
+                <input type="text" id="titulo" placeholder="Título de la ficha" required autocomplete="off">
+                <textarea id="descripcion" placeholder="Escribe la descripción aquí..." required></textarea>
+                <button type="submit" class="btn btn-primary">Guardar Ficha</button>
+            </form>
+        </div>
+
+        <div>
+            <h2>Mis Fichas</h2>
+            <div class="fichas-grid" id="contenedor-fichas">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        if (localStorage.getItem('tema') === 'oscuro') document.body.classList.add('dark-theme');
+        const userId = localStorage.getItem('userId');
+        if (!userId) window.location.href = 'index.html';
+        const formFicha = document.getElementById('form-ficha');
+        const contenedorFichas = document.getElementById('contenedor-fichas');
+        async function cargarFichas() {
+            const respuesta = await window.api.obtenerFichas(userId);
+            contenedorFichas.innerHTML = '';
+
+            if (respuesta.success && respuesta.data.length > 0) {
+                respuesta.data.forEach(ficha => {
+                    const fichaDiv = document.createElement('div');
+                    fichaDiv.className = 'ficha-item';
+                    fichaDiv.innerHTML = `
+                        <h3>${ficha.titulo}</h3>
+                        <p>${ficha.descripcion}</p>
+                        <span class="ficha-fecha">${new Date(ficha.fecha_creacion).toLocaleString()}</span>
+                    `;
+                    contenedorFichas.appendChild(fichaDiv);
+                });
+            } else {
+                contenedorFichas.innerHTML = '<p>Aún no tienes fichas guardadas. ¡Crea la primera!</p>';
+            }
+        }
+
+        formFicha.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const titulo = document.getElementById('titulo').value;
+            const descripcion = document.getElementById('descripcion').value;
+
+            const respuesta = await window.api.guardarFicha(userId, titulo, descripcion);
+
+            if (respuesta.success) {
+                formFicha.reset();
+                cargarFichas();
+            } else {
+                alert('Error al guardar: ' + respuesta.message);
+            }
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            localStorage.removeItem('userId');
+            window.location.href = 'index.html';
+        });
+
+        cargarFichas();
+    </script>
+</body>
+</html>
