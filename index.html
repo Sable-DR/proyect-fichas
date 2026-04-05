@@ -62,6 +62,7 @@
         input {
             width: 100%;
             padding: 10px;
+            margin-bottom: 15px;
             border: 1px solid var(--border-input);
             background-color: var(--bg-input);
             color: var(--text-input);
@@ -129,24 +130,27 @@
 </head>
 
 <body>
-
     <button id="theme-toggle" class="theme-btn">Modo Oscuro</button>
     <div class="login-card">
         <img src="assets/logo.png" alt="Logo del Sistema" class="logo" id="logo-img">
 
-        <h2>Iniciar Sesión</h2>
+        <h2 id="titulo-form">Iniciar Sesión</h2>
+        <form id="loginForm">
+            <input type="text" id="nombre_completo" placeholder="Tu nombre completo (Ej. Juan Pérez)"
+                style="display: none;" autocomplete="off">
 
-        <form id="login-form">
-            <div class="input-group">
-                <input type="text" id="username" placeholder="Usuario" required autocomplete="off">
-            </div>
-            <div class="input-group">
-                <input type="password" id="password" placeholder="Contraseña" required>
-            </div>
+            <input type="text" id="username" placeholder="Usuario (corto)" required autocomplete="off">
+            <input type="password" id="password" placeholder="Contraseña" required>
 
-            <button type="submit">Entrar</button>
-            <div id="error-msg">Usuario o contraseña incorrectos.</div>
+            <button type="submit" class="btn" id="btn-submit">Entrar</button>
         </form>
+
+        <p style="text-align: center; margin-top: 15px; font-size: 0.9em;">
+            <a href="#" id="toggle-form" style="color: #3b82f6; text-decoration: none;">¿No tienes cuenta? Regístrate
+                aquí</a>
+        </p>
+        <div id="message" class="error"></div>
+
     </div>
 
     <script>
@@ -169,27 +173,64 @@
             }
         });
 
-        const loginForm = document.getElementById('login-form');
-        const errorMsg = document.getElementById('error-msg');
+        const form = document.getElementById('loginForm');
+        const toggleLink = document.getElementById('toggle-form');
+        const tituloForm = document.getElementById('titulo-form');
+        const btnSubmit = document.getElementById('btn-submit');
+        const messageDiv = document.getElementById('message');
+        const inputNombreCompleto = document.getElementById('nombre_completo');
 
-        loginForm.addEventListener('submit', async (e) => {
+        let modoRegistro = false;
+
+        toggleLink.addEventListener('click', (e) => {
             e.preventDefault();
+            modoRegistro = !modoRegistro;
 
-            const userVal = document.getElementById('username').value;
-            const passVal = document.getElementById('password').value;
-            errorMsg.style.display = 'none';
+            if (modoRegistro) {
+                tituloForm.textContent = 'Crear Cuenta';
+                btnSubmit.textContent = 'Registrarse';
+                toggleLink.textContent = '¿Ya tienes cuenta? Inicia sesión';
+                inputNombreCompleto.style.display = 'block';
+                inputNombreCompleto.required = true;
+            } else {
+                tituloForm.textContent = 'Iniciar Sesión';
+                btnSubmit.textContent = 'Entrar';
+                toggleLink.textContent = '¿No tienes cuenta? Regístrate aquí';
+                inputNombreCompleto.style.display = 'none';
+                inputNombreCompleto.required = false;
+                inputNombreCompleto.value = '';
+            }
+            messageDiv.textContent = '';
+        });
 
-            const response = await window.api.login(userVal, passVal);
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const nombreCompleto = inputNombreCompleto.value;
+
+            let response;
+            if (modoRegistro) {
+                response = await window.api.registrar(user, nombreCompleto, pass);
+            } else {
+                response = await window.api.login(user, pass);
+            }
 
             if (response.success) {
                 localStorage.setItem('userId', response.userId);
+                localStorage.setItem('userName', user);
+                if (response.nombreCompleto) {
+                    localStorage.setItem('userFullName', response.nombreCompleto);
+                }
+                if (response.rol) {
+                    localStorage.setItem('userRol', response.rol);
+                }
+
                 window.location.href = 'dashboard.html';
             } else {
-                errorMsg.textContent = response.message;
-                errorMsg.style.display = 'block';
+                messageDiv.textContent = response.message;
             }
         });
-
     </script>
 </body>
 

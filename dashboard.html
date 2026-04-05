@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,13 +12,14 @@
             --text-main: #374151;
             --border-input: #d1d5db;
         }
+
         body.dark-theme {
             --bg-body: #111827;
             --bg-card: #1f2937;
             --text-main: #f9fafb;
             --border-input: #4b5563;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-body);
@@ -32,7 +34,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .btn {
@@ -43,10 +45,24 @@
             font-weight: bold;
             color: white;
         }
-        .btn-logout { background-color: #ef4444; }
-        .btn-logout:hover { background-color: #dc2626; }
-        .btn-primary { background-color: #3b82f6; width: 100%; margin-top: 10px; }
-        .btn-primary:hover { background-color: #2563eb; }
+
+        .btn-logout {
+            background-color: #ef4444;
+        }
+
+        .btn-logout:hover {
+            background-color: #dc2626;
+        }
+
+        .btn-primary {
+            background-color: #3b82f6;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
 
         .container {
             padding: 2rem;
@@ -64,7 +80,8 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        input, textarea {
+        input,
+        textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
@@ -74,7 +91,11 @@
             border-radius: 5px;
             box-sizing: border-box;
         }
-        textarea { resize: vertical; min-height: 100px; }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
 
         .fichas-grid {
             display: grid;
@@ -87,18 +108,106 @@
             padding: 1rem;
             border-radius: 8px;
             border-left: 4px solid #3b82f6;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
-        .ficha-item h3 { margin: 0 0 10px 0; font-size: 1.1rem; }
-        .ficha-item p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
-        .ficha-fecha { font-size: 0.75rem; color: #6b7280; margin-top: 10px; display: block; }
+
+        .ficha-item h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+        }
+
+        .ficha-item p {
+            margin: 0;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .ficha-fecha {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 10px;
+            display: block;
+        }
+
+        .user-menu-btn {
+            background-color: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-input);
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s;
+        }
+
+        .user-menu-btn:hover {
+            background-color: var(--border-input);
+        }
+
+        .dropdown-content {
+            display: none;
+            /* Oculto por defecto */
+            position: absolute;
+            right: 0;
+            top: 110%;
+            background-color: var(--bg-card);
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            border: 1px solid var(--border-input);
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        /* Esta clase la pondremos con JS para mostrar el menú */
+        .dropdown-content.show {
+            display: block;
+        }
+
+        .dropdown-content a {
+            color: var(--text-main);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.95rem;
+            transition: background-color 0.2s;
+        }
+
+        .dropdown-content a:hover {
+            background-color: var(--border-input);
+        }
+
+        .dropdown-content a.text-danger {
+            color: #ef4444;
+            /* Rojo para cerrar sesión */
+            border-top: 1px solid var(--border-input);
+            font-weight: bold;
+        }
     </style>
 </head>
+
 <body>
 
-    <header>
-        <div style="font-weight: bold;">Novedades en turno</div>
-        <button class="btn btn-logout" id="btn-logout">Cerrar Sesión</button>
+    <header
+        style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; border-bottom: 1px solid var(--border-input); background-color: var(--bg-card);">
+        <div style="font-weight: bold; font-size: 1.2rem;">Novedades en turno</div>
+
+        <div class="user-menu-container" style="position: relative;">
+
+            <button id="user-menu-btn" class="user-menu-btn">
+                <span id="header-username">Usuario</span>
+            </button>
+
+            <div id="dropdown-menu" class="dropdown-content">
+                <a href="admin.html" id="btn-admin" style="display: none;">Panel de Administración</a>
+                <a href="#" id="btn-logout" class="text-danger">Cerrar Sesión</a>
+            </div>
+
+        </div>
     </header>
 
     <div class="container">
@@ -114,7 +223,7 @@
         <div>
             <h2>Mis Fichas</h2>
             <div class="fichas-grid" id="contenedor-fichas">
-                </div>
+            </div>
         </div>
     </div>
 
@@ -122,8 +231,10 @@
         if (localStorage.getItem('tema') === 'oscuro') document.body.classList.add('dark-theme');
         const userId = localStorage.getItem('userId');
         if (!userId) window.location.href = 'index.html';
+
         const formFicha = document.getElementById('form-ficha');
         const contenedorFichas = document.getElementById('contenedor-fichas');
+
         async function cargarFichas() {
             const respuesta = await window.api.obtenerFichas(userId);
             contenedorFichas.innerHTML = '';
@@ -146,7 +257,7 @@
 
         formFicha.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const titulo = document.getElementById('titulo').value;
             const descripcion = document.getElementById('descripcion').value;
 
@@ -160,12 +271,39 @@
             }
         });
 
+        cargarFichas();
+
+        const currentFullName = localStorage.getItem('userFullName');
+        const currentUserName = localStorage.getItem('userName');
+        const currentRol = localStorage.getItem('userRol');
+        const nombreAMostrar = currentFullName ? currentFullName : (currentUserName ? currentUserName : 'Usuario');
+        document.getElementById('header-username').textContent = 'Hola, ' + nombreAMostrar;
+
+        if (currentRol === 'admin') {
+            document.getElementById('btn-admin').style.display = 'block';
+        }
+        const menuBtn = document.getElementById('user-menu-btn');
+        const dropdownMenu = document.getElementById('dropdown-menu');
+
+        menuBtn.addEventListener('click', (event) => {
+            dropdownMenu.classList.toggle('show');
+            event.stopPropagation();
+        });
+
+        window.addEventListener('click', (event) => {
+            if (!event.target.closest('.user-menu-container')) {
+                if (dropdownMenu.classList.contains('show')) {
+                    dropdownMenu.classList.remove('show');
+                }
+            }
+        });
         document.getElementById('btn-logout').addEventListener('click', () => {
-            localStorage.removeItem('userId');
+            localStorage.clear();
             window.location.href = 'index.html';
         });
 
-        cargarFichas();
     </script>
+
 </body>
+
 </html>

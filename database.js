@@ -19,9 +19,20 @@ function crearTablas() {
       CREATE TABLE IF NOT EXISTS usuarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
-      )
-    `);
+        nombre_completo TEXT NOT NULL, /* AQUI ESTA EL NOMBRE LARGO */
+        password TEXT NOT NULL,
+        activo INTEGER DEFAULT 1, 
+        rol TEXT DEFAULT 'user'
+      )`, (err) => {
+      if (!err) {
+        const salt = bcrypt.genSaltSync(10);
+        const hash = bcrypt.hashSync('12345', salt);
+        db.run(
+          "INSERT OR IGNORE INTO usuarios (username, nombre_completo, password, rol) VALUES (?, ?, ?, ?)", 
+          ['admin', 'Administrador del Sistema', hash, 'admin']
+        );
+      }
+    });
 
     db.run(`
       CREATE TABLE IF NOT EXISTS fichas (
@@ -47,8 +58,8 @@ function crearUsuarioPorDefecto() {
       const passwordEnTextoClaro = '12345';
       const salt = bcrypt.genSaltSync(10);
       const passwordEncriptada = bcrypt.hashSync(passwordEnTextoClaro, salt);
-      const insertSql = "INSERT INTO usuarios (username, password) VALUES (?, ?)";
-      db.run(insertSql, ['admin', passwordEncriptada], (err) => {
+      const insertSql = "INSERT INTO usuarios (username, nombre_completo, password) VALUES (?, ?, ?)";
+      db.run(insertSql, ['admin', 'Administrador del Sistema', passwordEncriptada], (err) => {
         if (err) {
           console.error('Error al insertar el usuario por defecto:', err.message);
         } else {
