@@ -4,306 +4,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Principal</title>
-    <style>
-        :root {
-            --bg-body: #f3f4f6;
-            --bg-card: white;
-            --text-main: #374151;
-            --border-input: #d1d5db;
-        }
-
-        body.dark-theme {
-            --bg-body: #111827;
-            --bg-card: #1f2937;
-            --text-main: #f9fafb;
-            --border-input: #4b5563;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            margin: 0;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        header {
-            background-color: var(--bg-card);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            color: white;
-        }
-
-        .btn-logout {
-            background-color: #ef4444;
-        }
-
-        .btn-logout:hover {
-            background-color: #dc2626;
-        }
-
-        .btn-primary {
-            background-color: #3b82f6;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .btn-primary:hover {
-            background-color: #2563eb;
-        }
-
-        .container {
-            padding: 2rem;
-            max-width: 1000px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 2rem;
-        }
-
-        .card {
-            background-color: var(--bg-card);
-            padding: 1.5rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        input,
-        textarea {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid var(--border-input);
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .fichas-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1rem;
-        }
-
-        .ficha-item {
-            background-color: var(--bg-card);
-            padding: 1rem;
-            border-radius: 8px;
-            border-left: 4px solid #3b82f6;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .ficha-item h3 {
-            margin: 0 0 10px 0;
-            font-size: 1.1rem;
-        }
-
-        .ficha-item p {
-            margin: 0;
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        .ficha-fecha {
-            font-size: 0.75rem;
-            color: #6b7280;
-            margin-top: 10px;
-            display: block;
-        }
-
-        .user-menu-btn {
-            background-color: var(--bg-input);
-            color: var(--text-main);
-            border: 1px solid var(--border-input);
-            padding: 8px 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: background-color 0.3s;
-        }
-
-        .user-menu-btn:hover {
-            background-color: var(--border-input);
-        }
-
-        .dropdown-content {
-            display: none;
-            /* Oculto por defecto */
-            position: absolute;
-            right: 0;
-            top: 110%;
-            background-color: var(--bg-card);
-            min-width: 200px;
-            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            border: 1px solid var(--border-input);
-            z-index: 1000;
-            overflow: hidden;
-        }
-
-        /* Esta clase la pondremos con JS para mostrar el menú */
-        .dropdown-content.show {
-            display: block;
-        }
-
-        .dropdown-content a {
-            color: var(--text-main);
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-            font-size: 0.95rem;
-            transition: background-color 0.2s;
-        }
-
-        .dropdown-content a:hover {
-            background-color: var(--border-input);
-        }
-
-        .dropdown-content a.text-danger {
-            color: #ef4444;
-            /* Rojo para cerrar sesión */
-            border-top: 1px solid var(--border-input);
-            font-weight: bold;
-        }
-    </style>
+    <title>Novedades en turno</title>
+    <link rel="stylesheet" href="dashboard.css">
 </head>
 
 <body>
 
-    <header
-        style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; border-bottom: 1px solid var(--border-input); background-color: var(--bg-card);">
+    <header>
         <div style="font-weight: bold; font-size: 1.2rem;">Novedades en turno</div>
-
         <div class="user-menu-container" style="position: relative;">
-
             <button id="user-menu-btn" class="user-menu-btn">
-                <span id="header-username">Usuario</span>
+                <span id="header-username">Hola, Usuario</span>
             </button>
-
             <div id="dropdown-menu" class="dropdown-content">
                 <a href="admin.html" id="btn-admin" style="display: none;">Panel de Administración</a>
-                <a href="#" id="btn-logout" class="text-danger">Cerrar Sesión</a>
+                <a href="#" id="btn-logout"
+                    style="color: #ef4444; border-top: 1px solid var(--border-input); font-weight: bold;">Cerrar
+                    Sesión</a>
             </div>
-
         </div>
     </header>
 
-    <div class="container">
-        <div class="card">
+    <div class="app-container">
+
+        <aside class="sidebar-form">
             <h3>Nueva Ficha</h3>
             <form id="form-ficha">
-                <input type="text" id="titulo" placeholder="Título de la ficha" required autocomplete="off">
-                <textarea id="descripcion" placeholder="Escribe la descripción aquí..." required></textarea>
-                <button type="submit" class="btn btn-primary">Guardar Ficha</button>
-            </form>
-        </div>
 
-        <div>
-            <h2>Mis Fichas</h2>
-            <div class="fichas-grid" id="contenedor-fichas">
+                <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 1rem;">
+                    <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                        <input type="date" id="fecha" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                        <input type="time" id="hora" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <input type="text" id="titulo" placeholder="Título corto (Ej. Choque Centro)" required
+                        autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <select id="medio-reporte" required>
+                        <option value="" disabled selected>Medio del reporte...</option>
+                        <option value="911">Llamada 911</option>
+                        <option value="Radio">Vía Radio</option>
+                        <option value="Directo">Reporte Directo / Ciudadano</option>
+                        <option value="Camaras">Cámaras de Vigilancia</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <input type="text" id="direccion" placeholder="Dirección exacta" required autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <input type="text" id="colonia" placeholder="Colonia / Sector" required autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <textarea id="descripcion" placeholder="Escribe la descripción aquí..." rows="3"
+                        required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <select id="tipo-auxilio" required>
+                        <option value="" disabled selected>Tipo de auxilio...</option>
+                        <option value="Medico">Médico</option>
+                        <option value="Incendio">Incendio</option>
+                        <option value="Rescate">Rescate</option>
+                        <option value="Seguridad">Seguridad Pública</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <select id="unidad" required>
+                        <option value="" disabled selected>Unidad que atiende...</option>
+                        <option value="Ambulancia 01">Ambulancia 01</option>
+                        <option value="Unidad de Rescate">Unidad de Rescate</option>
+                        <option value="Bomberos 01">Bomberos 01</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <select id="estado" required>
+                        <option value="PENDIENTE" selected>PENDIENTE</option>
+                        <option value="LISTO">LISTO</option>
+                    </select>
+                </div>
+
+                <div class="map-placeholder">
+                    (Mini mapa de Google Maps)<br>Pendiente de API
+                </div>
+
+                <div class="form-group">
+                    <select id="veracidad" required>
+                        <option value="Verdadera" selected>Reporte Real</option>
+                        <option value="Falsa">Reporte Falso</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-submit">Guardar Ficha</button>
+            </form>
+        </aside>
+
+        <main class="main-content">
+            <div id="contenedor-fichas" class="fichas-grid">
             </div>
-        </div>
+        </main>
     </div>
 
-    <script>
-        if (localStorage.getItem('tema') === 'oscuro') document.body.classList.add('dark-theme');
-        const userId = localStorage.getItem('userId');
-        if (!userId) window.location.href = 'index.html';
-
-        const formFicha = document.getElementById('form-ficha');
-        const contenedorFichas = document.getElementById('contenedor-fichas');
-
-        async function cargarFichas() {
-            const respuesta = await window.api.obtenerFichas(userId);
-            contenedorFichas.innerHTML = '';
-
-            if (respuesta.success && respuesta.data.length > 0) {
-                respuesta.data.forEach(ficha => {
-                    const fichaDiv = document.createElement('div');
-                    fichaDiv.className = 'ficha-item';
-                    fichaDiv.innerHTML = `
-                        <h3>${ficha.titulo}</h3>
-                        <p>${ficha.descripcion}</p>
-                        <span class="ficha-fecha">${new Date(ficha.fecha_creacion).toLocaleString()}</span>
-                    `;
-                    contenedorFichas.appendChild(fichaDiv);
-                });
-            } else {
-                contenedorFichas.innerHTML = '<p>Aún no tienes fichas guardadas. ¡Crea la primera!</p>';
-            }
-        }
-
-        formFicha.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const titulo = document.getElementById('titulo').value;
-            const descripcion = document.getElementById('descripcion').value;
-
-            const respuesta = await window.api.guardarFicha(userId, titulo, descripcion);
-
-            if (respuesta.success) {
-                formFicha.reset();
-                cargarFichas();
-            } else {
-                alert('Error al guardar: ' + respuesta.message);
-            }
-        });
-
-        cargarFichas();
-
-        const currentFullName = localStorage.getItem('userFullName');
-        const currentUserName = localStorage.getItem('userName');
-        const currentRol = localStorage.getItem('userRol');
-        const nombreAMostrar = currentFullName ? currentFullName : (currentUserName ? currentUserName : 'Usuario');
-        document.getElementById('header-username').textContent = 'Hola, ' + nombreAMostrar;
-
-        if (currentRol === 'admin') {
-            document.getElementById('btn-admin').style.display = 'block';
-        }
-        const menuBtn = document.getElementById('user-menu-btn');
-        const dropdownMenu = document.getElementById('dropdown-menu');
-
-        menuBtn.addEventListener('click', (event) => {
-            dropdownMenu.classList.toggle('show');
-            event.stopPropagation();
-        });
-
-        window.addEventListener('click', (event) => {
-            if (!event.target.closest('.user-menu-container')) {
-                if (dropdownMenu.classList.contains('show')) {
-                    dropdownMenu.classList.remove('show');
-                }
-            }
-        });
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            localStorage.clear();
-            window.location.href = 'index.html';
-        });
-
-    </script>
-
+    <script src="dashboard.js"></script>
 </body>
 
 </html>

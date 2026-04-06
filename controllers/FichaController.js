@@ -1,13 +1,17 @@
 const FichaModel = require('../models/FichaModel');
 
 class FichaController {
-    static async guardarFicha(event, userId, titulo, descripcion) {
+    static async guardarFicha(event, userId, titulo, descripcion, tipoAuxilio, unidad, estado, fecha, hora, medio, direccion, colonia, veracidad, capturista) {
         try {
             if (!titulo || !descripcion) {
                 return { success: false, message: "El título y la descripción son obligatorios" };
             }
 
-            const result = await FichaModel.create(userId, titulo, descripcion);
+            const result = await FichaModel.create(
+                userId, titulo, descripcion, tipoAuxilio, unidad,
+                estado, fecha, hora, medio, direccion, colonia, veracidad, capturista
+            );
+
             return { success: true, id: result.id };
         } catch (error) {
             console.error(error);

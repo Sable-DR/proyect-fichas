@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Pantalla</title>
+    
+    <link rel="stylesheet" href="global.css">
+    
+    </head>
+
+<body>
+
+    <header>
+        <div style="font-weight: bold; font-size: 1.2rem;">Título de la Pantalla</div>
+        <div class="user-menu-container" style="position: relative;">
+            <button id="user-menu-btn" class="user-menu-btn">
+                <span id="header-username">Hola, Usuario</span>
+            </button>
+            <div id="dropdown-menu" class="dropdown-content">
+                <a href="dashboard.html">Panel principal</a>
+                <a href="admin.html" id="btn-admin" style="display: none;">Panel de Administración</a>
+                <a href="#" id="btn-logout" class="text-danger">Cerrar Sesión</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-container">
+
+        <aside class="sidebar">
+            </aside>
+
+        <main class="main-content">
+            <h1>Bienvenido a la nueva página</h1>
+            </main>
+
+    </div>
+
+    <script src="global.js"></script>
+
+    </body>
+
+</html>
