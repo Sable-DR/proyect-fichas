@@ -1,7 +1,7 @@
 const FichaModel = require('../models/FichaModel');
 
 class FichaController {
-    static async guardarFicha(event, userId, titulo, descripcion, tipoAuxilio, unidad, estado, fecha, hora, medio, direccion, colonia, veracidad, capturista) {
+    static async guardarFicha(event, userId, titulo, descripcion, tipoAuxilio, unidad, estado, fecha, hora, medio, direccion, colonia, veracidad, capturista, lat, lng) {
         try {
             if (!titulo || !descripcion) {
                 return { success: false, message: "El título y la descripción son obligatorios" };
@@ -9,13 +9,13 @@ class FichaController {
 
             const result = await FichaModel.create(
                 userId, titulo, descripcion, tipoAuxilio, unidad,
-                estado, fecha, hora, medio, direccion, colonia, veracidad, capturista
+                estado, fecha, hora, medio, direccion, colonia, veracidad, capturista, lat, lng
             );
 
             return { success: true, id: result.id };
         } catch (error) {
-            console.error(error);
-            return { success: false, message: 'Error interno al guardar la ficha' };
+            console.error("Error detallado en el controlador:", error);
+            return { success: false, message: 'Error interno al guardar la ficha: ' + error.message };
         }
     }
 

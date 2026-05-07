@@ -41,6 +41,8 @@ function crearTablas() {
         direccion TEXT,
         colonia TEXT,
         capturista TEXT,
+        latitud TEXT,         
+        longitud TEXT,         
         fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES usuarios(id)
       )
