@@ -8,5 +8,16 @@ contextBridge.exposeInMainWorld('api', {
     obtenerUsuarios: () => ipcRenderer.invoke('obtener-usuarios'),
     editarUsuario: (id, nuevoNombre) => ipcRenderer.invoke('editar-usuario', id, nuevoNombre),
     cambiarPassword: (id, nuevaPassword) => ipcRenderer.invoke('cambiar-password', id, nuevaPassword),
-    cambiarEstadoUsuario: (id, estado) => ipcRenderer.invoke('cambiar-estado-usuario', id, estado)
+    cambiarEstadoUsuario: (id, estado) => ipcRenderer.invoke('cambiar-estado-usuario', id, estado),
+
+    // --- CATÁLOGOS DINÁMICOS ---
+    obtenerCatalogos: () => ipcRenderer.invoke('obtener-catalogos'),
+    agregarUnidad: (nombre) => ipcRenderer.invoke('agregar-unidad', nombre),
+    eliminarUnidad: (id) => ipcRenderer.invoke('eliminar-unidad', id),
+    agregarAuxilio: (nombre) => ipcRenderer.invoke('agregar-auxilio', nombre),
+    eliminarAuxilio: (id) => ipcRenderer.invoke('eliminar-auxilio', id),
+    agregarMedio: (nombre) => ipcRenderer.invoke('agregar-medio', nombre),
+    eliminarMedio: (id) => ipcRenderer.invoke('eliminar-medio', id),
+    agregarColonia: (nombre) => ipcRenderer.invoke('agregar-colonia', nombre),
+    eliminarColonia: (id) => ipcRenderer.invoke('eliminar-colonia', id),
 });

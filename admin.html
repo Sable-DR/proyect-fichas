@@ -27,15 +27,15 @@
     <div class="app-container">
 
         <aside class="sidebar">
-            <a href="#" class="active">Gestión de usuarios</a>
-            <a href="#">Configuración del sistema</a>
+            <a href="#" id="tab-usuarios" class="active">Gestión de usuarios</a>
+            <a href="#" id="tab-configuracion">Configuración del sistema</a>
             <a href="#">Reportes de actividad</a>
             <a href="#">Respaldar Base de Datos</a>
         </aside>
 
         <main class="main-content">
 
-            <div class="admin-card">
+            <div class="admin-card" id="card-usuarios">
                 <div class="header-card">
                     <h2 style="margin:0;">Gestión de Usuarios</h2>
                 </div>
@@ -54,6 +54,58 @@
                     <tbody id="tabla-usuarios">
                     </tbody>
                 </table>
+            </div>
+
+            <div class="admin-card" id="card-configuracion" style="display: none;">
+                <div class="header-card">
+                    <h2 style="margin:0;">Configuración de Catálogos</h2>
+                </div>
+
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
+                    <!-- Unidades -->
+                    <div
+                        style="flex: 1; min-width: 240px; background: var(--bg-body); padding: 15px; border-radius: 8px;">
+                        <h3>Unidades</h3>
+                        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                            <input type="text" id="input-nueva-unidad" placeholder="Ej. Ambulancia 02">
+                            <button id="btn-add-unidad" class="btn-action btn-toggle">Agregar</button>
+                        </div>
+                        <ul id="lista-unidades" style="list-style: none; padding: 0;"></ul>
+                    </div>
+
+                    <!-- Tipos de Auxilio -->
+                    <div
+                        style="flex: 1; min-width: 240px; background: var(--bg-body); padding: 15px; border-radius: 8px;">
+                        <h3>Tipos de Auxilio</h3>
+                        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                            <input type="text" id="input-nuevo-auxilio" placeholder="Ej. Extravío">
+                            <button id="btn-add-auxilio" class="btn-action btn-toggle">Agregar</button>
+                        </div>
+                        <ul id="lista-auxilios" style="list-style: none; padding: 0;"></ul>
+                    </div>
+
+                    <!-- Medios de Reporte -->
+                    <div
+                        style="flex: 1; min-width: 240px; background: var(--bg-body); padding: 15px; border-radius: 8px;">
+                        <h3>Medios de Reporte</h3>
+                        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                            <input type="text" id="input-nuevo-medio" placeholder="Ej. Redes Sociales">
+                            <button id="btn-add-medio" class="btn-action btn-toggle">Agregar</button>
+                        </div>
+                        <ul id="lista-medios" style="list-style: none; padding: 0;"></ul>
+                    </div>
+
+                    <!-- Colonias / Sectores -->
+                    <div
+                        style="flex: 1; min-width: 240px; background: var(--bg-body); padding: 15px; border-radius: 8px;">
+                        <h3>Colonias / Sectores</h3>
+                        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                            <input type="text" id="input-nueva-colonia" placeholder="Ej. Sector Norte">
+                            <button id="btn-add-colonia" class="btn-action btn-toggle">Agregar</button>
+                        </div>
+                        <ul id="lista-colonias" style="list-style: none; padding: 0;"></ul>
+                    </div>
+                </div>
             </div>
 
         </main>

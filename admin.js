@@ -4,7 +4,6 @@ if (localStorage.getItem('tema') === 'oscuro') {
 
 const currentFullName = localStorage.getItem('userFullName') || localStorage.getItem('userName') || 'Usuario';
 document.getElementById('header-username').textContent = 'Hola, ' + currentFullName;
-
 const tabla = document.getElementById('tabla-usuarios');
 
 async function cargarUsuarios() {
@@ -135,4 +134,203 @@ document.getElementById('btn-logout').addEventListener('click', () => {
     window.location.href = 'index.html';
 });
 
+
+const tabUsuarios = document.getElementById('tab-usuarios');
+const tabConfig = document.getElementById('tab-configuracion');
+const cardUsuarios = document.getElementById('card-usuarios');
+const cardConfig = document.getElementById('card-configuracion');
+
+tabUsuarios.addEventListener('click', (e) => {
+    e.preventDefault();
+    tabUsuarios.classList.add('active');
+    tabConfig.classList.remove('active');
+    cardUsuarios.style.display = 'block';
+    cardConfig.style.display = 'none';
+});
+
+tabConfig.addEventListener('click', (e) => {
+    e.preventDefault();
+    tabConfig.classList.add('active');
+    tabUsuarios.classList.remove('active');
+    cardUsuarios.style.display = 'none';
+    cardConfig.style.display = 'block';
+});
+
 cargarUsuarios();
+
+
+// --- GESTIÓN DE CATÁLOGOS (ADMIN) ---
+
+async function cargarCatalogosAdmin() {
+    const response = await window.api.obtenerCatalogos();
+
+    if (response.success) {
+
+        // Renderizar Unidades
+        const listaUnidades = document.getElementById('lista-unidades');
+        listaUnidades.innerHTML = '';
+        (response.unidades || []).forEach(u => {
+            const li = document.createElement('li');
+            li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-input);';
+            li.innerHTML = `
+                <span>${u.nombre}</span>
+                <button class="btn-action btn-disable" onclick="eliminarUnidad(${u.id})">Eliminar</button>
+            `;
+            listaUnidades.appendChild(li);
+        });
+
+        // Renderizar Tipos de Auxilio
+        const listaAuxilios = document.getElementById('lista-auxilios');
+        listaAuxilios.innerHTML = '';
+        (response.auxilios || []).forEach(a => {
+            const li = document.createElement('li');
+            li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-input);';
+            li.innerHTML = `
+                <span>${a.nombre}</span>
+                <button class="btn-action btn-disable" onclick="eliminarAuxilio(${a.id})">Eliminar</button>
+            `;
+            listaAuxilios.appendChild(li);
+        });
+
+         // Renderizar Medios de Reporte
+        const listaMedios = document.getElementById('lista-medios');
+        if (listaMedios && response.medios) {
+            listaMedios.innerHTML = '';
+            response.medios.forEach(m => {
+                const li = document.createElement('li');
+                li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-input);';
+                li.innerHTML = `
+            <span>${m.nombre}</span>
+            <button class="btn-action btn-disable" onclick="eliminarMedio(${m.id})">Eliminar</button>
+        `;
+                listaMedios.appendChild(li);
+            });
+
+             // Renderizar Colonias / Sectores
+            const listaColonias = document.getElementById('lista-colonias');
+            if (listaColonias && response.colonias) {
+                listaColonias.innerHTML = '';
+                response.colonias.forEach(c => {
+                    const li = document.createElement('li');
+                    li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-input);';
+                    li.innerHTML = `
+            <span>${c.nombre}</span>
+            <button class="btn-action btn-disable" onclick="eliminarColonia(${c.id})">Eliminar</button>
+        `;
+                    listaColonias.appendChild(li);
+                });
+            }
+
+        }
+    }
+}
+
+// Agregar Unidad
+document.getElementById('btn-add-unidad').addEventListener('click', async () => {
+    const input = document.getElementById('input-nueva-unidad');
+    const nombre = input.value.trim();
+    if (!nombre) return alert('Ingresa un nombre para la unidad.');
+
+    const res = await window.api.agregarUnidad(nombre);
+    if (res.success) {
+        input.value = '';
+        cargarCatalogosAdmin();
+    } else {
+        alert('Error: ' + res.message);
+    }
+});
+
+// Eliminar Unidad
+window.eliminarUnidad = async function (id) {
+    if (confirm('¿Deseas eliminar esta unidad del catálogo?')) {
+        const res = await window.api.eliminarUnidad(id);
+        if (res.success) {
+            cargarCatalogosAdmin();
+        } else {
+            alert('Error: ' + res.message);
+        }
+    }
+};
+
+// Agregar Tipo de Auxilio
+document.getElementById('btn-add-auxilio').addEventListener('click', async () => {
+    const input = document.getElementById('input-nuevo-auxilio');
+    const nombre = input.value.trim();
+    if (!nombre) return alert('Ingresa un tipo de auxilio.');
+
+    const res = await window.api.agregarAuxilio(nombre);
+    if (res.success) {
+        input.value = '';
+        cargarCatalogosAdmin();
+    } else {
+        alert('Error: ' + res.message);
+    }
+});
+
+// Eliminar Tipo de Auxilio
+window.eliminarAuxilio = async function (id) {
+    if (confirm('¿Deseas eliminar este tipo de auxilio del catálogo?')) {
+        const res = await window.api.eliminarAuxilio(id);
+        if (res.success) {
+            cargarCatalogosAdmin();
+        } else {
+            alert('Error: ' + res.message);
+        }
+    }
+};
+
+// Agregar Tipo de Medio
+document.getElementById('btn-add-medio')?.addEventListener('click', async () => {
+    const input = document.getElementById('input-nuevo-medio');
+    const nombre = input.value.trim();
+    if (!nombre) return alert('Ingresa un medio de reporte.');
+
+    const res = await window.api.agregarMedio(nombre);
+    if (res.success) {
+        input.value = '';
+        cargarCatalogosAdmin();
+    } else {
+        alert('Error: ' + res.message);
+    }
+});
+
+// Eliminar Tipo de Medio
+window.eliminarMedio = async function (id) {
+    if (confirm('¿Deseas eliminar este medio del catálogo?')) {
+        const res = await window.api.eliminarMedio(id);
+        if (res.success) {
+            cargarCatalogosAdmin();
+        } else {
+            alert('Error: ' + res.message);
+        }
+    }
+};
+
+// Agregar Colonias / Sectores
+document.getElementById('btn-add-colonia')?.addEventListener('click', async () => {
+    const input = document.getElementById('input-nueva-colonia');
+    const nombre = input.value.trim();
+    if (!nombre) return alert('Ingresa el nombre de la colonia/sector.');
+
+    const res = await window.api.agregarColonia(nombre);
+    if (res.success) {
+        input.value = '';
+        cargarCatalogosAdmin();
+    } else {
+        alert('Error: ' + res.message);
+    }
+});
+
+// Eliminar Colonias / Sectores
+window.eliminarColonia = async function (id) {
+    if (confirm('¿Deseas eliminar esta colonia/sector del catálogo?')) {
+        const res = await window.api.eliminarColonia(id);
+        if (res.success) cargarCatalogosAdmin();
+        else alert('Error: ' + res.message);
+    }
+};
+
+// Cargar catalogos al presionar la pestaña de Configuración
+tabConfig.addEventListener('click', (e) => {
+    cargarCatalogosAdmin();
+});
