@@ -20,4 +20,5 @@ contextBridge.exposeInMainWorld('api', {
     eliminarMedio: (id) => ipcRenderer.invoke('eliminar-medio', id),
     agregarColonia: (nombre) => ipcRenderer.invoke('agregar-colonia', nombre),
     eliminarColonia: (id) => ipcRenderer.invoke('eliminar-colonia', id),
+    actualizarFicha: (datosFicha) => ipcRenderer.invoke('actualizar-ficha', datosFicha),
 });

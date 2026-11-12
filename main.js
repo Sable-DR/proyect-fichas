@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-require('./database.js');
+const db = require('./database.js');
 
 const AuthController = require('./controllers/AuthController');
 const FichaController = require('./controllers/FichaController');
@@ -16,6 +16,8 @@ function createWindow() {
       nodeIntegration: false
     }
   });
+
+  win.maximize();
 
   win.loadFile('index.html');
 }
@@ -44,9 +46,53 @@ app.whenReady().then(() => {
   ipcMain.handle('agregar-medio', CatalogoController.agregarMedio);
   ipcMain.handle('eliminar-medio', CatalogoController.eliminarMedio);
   ipcMain.handle('agregar-colonia', CatalogoController.agregarColonia);
-ipcMain.handle('eliminar-colonia', CatalogoController.eliminarColonia);
+  ipcMain.handle('eliminar-colonia', CatalogoController.eliminarColonia);
 });
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+ipcMain.handle('actualizar-ficha', async (event, ficha) => {
+  return new Promise((resolve) => {
+    const query = `
+            UPDATE fichas 
+            SET titulo = ?,
+                tipo_auxilio = ?, 
+                descripcion = ?, 
+                unidad = ?, 
+                estado = ?, 
+                veracidad = ?, 
+                fecha = ?, 
+                hora = ?, 
+                medio = ?, 
+                direccion = ?, 
+                colonia = ?
+            WHERE id = ?
+        `;
+
+    const params = [
+      ficha.tipoAuxilio,
+      ficha.tipoAuxilio,
+      ficha.descripcion,
+      ficha.unidad,
+      ficha.estado,
+      ficha.veracidad,
+      ficha.fecha,
+      ficha.hora,
+      ficha.medio,
+      ficha.direccion,
+      ficha.colonia,
+      ficha.id
+    ];
+
+    db.run(query, params, function (err) {
+      if (err) {
+        console.error('Error al actualizar ficha en SQLite:', err);
+        resolve({ success: false, message: err.message });
+      } else {
+        resolve({ success: true, message: 'Ficha actualizada correctamente' });
+      }
+    });
+  });
 });

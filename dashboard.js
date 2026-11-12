@@ -8,7 +8,9 @@ const currentUserName = localStorage.getItem('userName');
 const currentRol = localStorage.getItem('userRol');
 const capturista = currentFullName ? currentFullName : (currentUserName ? currentUserName : 'Usuario Desconocido');
 
-document.addEventListener('DOMContentLoaded', () => {
+let fichaEditandoActual = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
 
     const headerUser = document.getElementById('header-username');
     if (headerUser) headerUser.textContent = 'Hola, ' + capturista;
@@ -17,31 +19,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnAdmin = document.getElementById('btn-admin');
         if (btnAdmin) btnAdmin.style.display = 'block';
     }
-    const menuBtn = document.getElementById('user-menu-btn');
+    const userMenuBtn = document.getElementById('user-menu-btn');
     const dropdownMenu = document.getElementById('dropdown-menu');
 
-    if (menuBtn && dropdownMenu) {
-        menuBtn.addEventListener('click', (event) => {
+    if (userMenuBtn && dropdownMenu) {
+        userMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             dropdownMenu.classList.toggle('show');
-            event.stopPropagation();
         });
 
-        window.addEventListener('click', (event) => {
-            if (!event.target.closest('.user-menu-container')) {
-                dropdownMenu.classList.remove('show');
-            }
-        });
-    }
-    const btnLogout = document.getElementById('btn-logout');
-    if (btnLogout) {
-        btnLogout.addEventListener('click', () => {
-            localStorage.clear();
-            window.location.href = 'index.html';
+        window.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
         });
     }
 
     setFechaHoraActuales();
-    cargarCatalogosDashboard();
+
+    // USAR AWAIT PARA GARANTIZAR QUE LOS DATALISTS TENGAN DATOS ANTES DE VALIDAR
+    await cargarCatalogosDashboard();
+
     cargarFichas();
     aplicarRestriccionesCatalogos();
 
@@ -51,6 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
         selectEstado.addEventListener('change', actualizarOpcionesVeracidad);
     }
     actualizarOpcionesVeracidad();
+
+    const selectEstadoEdit = document.getElementById('edit-estado');
+    if (selectEstadoEdit) {
+        selectEstadoEdit.addEventListener('change', actualizarOpcionesVeracidadEdit);
+    }
 });
 
 
@@ -136,7 +137,7 @@ async function cargarFichas() {
         });
 
         if (fichasMes.length > 0) {
-            actualizarContadores(respuesta.data);
+            actualizarContadores(fichasMes);
 
             fichasMes.forEach(ficha => {
                 const tarjeta = crearTarjetaFicha(ficha);
@@ -154,102 +155,263 @@ async function cargarFichas() {
     }
 }
 
+// --- SISTEMA CATALOGOS EN MEMORIA & QUICK-PICK MODAL ---
+const catalogosMemoria = {
+    unidades: [],
+    auxilios: [],
+    medios: [],
+    colonias: []
+};
+
+// Carga asíncrona de catálogos desde la base de datos a memoria
 async function cargarCatalogosDashboard() {
     const response = await window.api.obtenerCatalogos();
 
     if (response.success) {
-        const listUnidades = document.getElementById('list-unidades');
-        const listAuxilios = document.getElementById('list-auxilios');
-        const listMedios = document.getElementById('list-medios');
-        const listColonias = document.getElementById('list-colonias');
-
-        if (listUnidades && response.unidades) {
-            listUnidades.innerHTML = '';
-            response.unidades.forEach(u => {
-                const option = document.createElement('option');
-                option.value = u.nombre;
-                listUnidades.appendChild(option);
-            });
-        }
-
-        if (listAuxilios && response.auxilios) {
-            listAuxilios.innerHTML = '';
-            response.auxilios.forEach(a => {
-                const option = document.createElement('option');
-                option.value = a.nombre;
-                listAuxilios.appendChild(option);
-            });
-        }
-
-        if (listMedios && response.medios) {
-            listMedios.innerHTML = '';
-            response.medios.forEach(m => {
-                const option = document.createElement('option');
-                option.value = m.nombre;
-                listMedios.appendChild(option);
-            });
-        }
-
-        if (listColonias && response.colonias) {
-            listColonias.innerHTML = '';
-            response.colonias.forEach(c => {
-                const option = document.createElement('option');
-                option.value = c.nombre;
-                listColonias.appendChild(option);
-            });
-        }
+        catalogosMemoria.unidades = (response.unidades || []).map(u => u.nombre);
+        catalogosMemoria.auxilios = (response.auxilios || []).map(a => a.nombre);
+        catalogosMemoria.medios = (response.medios || []).map(m => m.nombre);
+        catalogosMemoria.colonias = (response.colonias || []).map(c => c.nombre);
     }
 }
 
-function restringirYAutocompletarCatalogo(inputId, datalistId) {
-    const input = document.getElementById(inputId);
-    const datalist = document.getElementById(datalistId);
+// Variables globales del estado del QuickPick
+let quickPickState = {
+    targetInput: null,
+    tipoCatalogo: '',
+    opcionesFiltradas: [],
+    selectedIndex: -1
+};
 
-    if (!input || !datalist) return;
+// Crear la estructura HTML del Modal de Selección de forma dinámica
+function inicializarModalQuickPick() {
+    if (document.getElementById('quickpick-modal')) return;
 
-    input.addEventListener('change', () => {
-        const textoEscrito = input.value.trim();
-        if (!textoEscrito) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'quickpick-modal';
+    overlay.className = 'quickpick-overlay';
 
-        const opciones = Array.from(datalist.options).map(opt => opt.value);
+    overlay.innerHTML = `
+        <div class="quickpick-container">
+            <div class="quickpick-header">
+                <h3 id="quickpick-titulo">Seleccionar Opción</h3>
+                <button class="quickpick-close" id="quickpick-btn-cerrar">&times;</button>
+            </div>
+            <div class="quickpick-search-box">
+                <input type="text" id="quickpick-input-busqueda" placeholder="Escribe para buscar..." autocomplete="off">
+            </div>
+            <ul class="quickpick-list" id="quickpick-lista"></ul>
+        </div>
+    `;
 
-        const coincidenciaExacta = opciones.find(
-            opt => opt.toLowerCase() === textoEscrito.toLowerCase()
-        );
+    document.body.appendChild(overlay);
 
-        if (coincidenciaExacta) {
-            input.value = coincidenciaExacta;
-            // SI ES EL CAMPO COLONIA, MOVEMOS EL MAPA
-            if (inputId === 'colonia') centrarMapaEnColonia(coincidenciaExacta);
-            return;
+    const inputBusqueda = document.getElementById('quickpick-input-busqueda');
+    const btnCerrar = document.getElementById('quickpick-btn-cerrar');
+
+    // Evento de búsqueda en tiempo real
+    inputBusqueda.addEventListener('input', () => {
+        filtrarYRenderizarQuickPick(inputBusqueda.value);
+    });
+
+    // Navegación por teclado (Flechas, Enter, Escape)
+    inputBusqueda.addEventListener('keydown', (e) => {
+        const items = document.querySelectorAll('.quickpick-item');
+        if (items.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            quickPickState.selectedIndex = (quickPickState.selectedIndex + 1) % items.length;
+            actualizarSeleccionVisual(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            quickPickState.selectedIndex = (quickPickState.selectedIndex - 1 + items.length) % items.length;
+            actualizarSeleccionVisual(items);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (quickPickState.selectedIndex >= 0 && quickPickState.selectedIndex < items.length) {
+                items[quickPickState.selectedIndex].click();
+            } else if (items.length > 0) {
+                items[0].click();
+            }
+        } else if (e.key === 'Escape') {
+            cerrarQuickPick();
         }
+    });
 
-        const coincidencias = opciones.filter(
-            opt => opt.toLowerCase().includes(textoEscrito.toLowerCase())
-        );
+    btnCerrar.addEventListener('click', cerrarQuickPick);
 
-        if (coincidencias.length === 1) {
-            input.value = coincidencias[0];
-            // SI ES EL CAMPO COLONIA, MOVEMOS EL MAPA
-            if (inputId === 'colonia') centrarMapaEnColonia(coincidencias[0]);
-        } else if (coincidencias.length > 1) {
-            alert(`Hay varias opciones que contienen "${textoEscrito}". Por favor elige una de la lista desplegable.`);
-            input.value = '';
-            input.focus();
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) cerrarQuickPick();
+    });
+}
+
+function actualizarSeleccionVisual(items) {
+    items.forEach((item, index) => {
+        if (index === quickPickState.selectedIndex) {
+            item.classList.add('active-item');
+            item.scrollIntoView({ block: 'nearest' });
         } else {
-            alert(`"${textoEscrito}" no existe en el catálogo.`);
-            input.value = '';
-            input.focus();
+            item.classList.remove('active-item');
         }
     });
 }
 
-function aplicarRestriccionesCatalogos() {
-    restringirYAutocompletarCatalogo('medio-reporte', 'list-medios');
-    restringirYAutocompletarCatalogo('colonia', 'list-colonias');
-    restringirYAutocompletarCatalogo('tipo-auxilio', 'list-auxilios');
-    restringirYAutocompletarCatalogo('unidad', 'list-unidades');
+function abrirQuickPick(titulo, tipoCatalogo, inputId) {
+    inicializarModalQuickPick();
+
+    const targetInput = document.getElementById(inputId);
+    if (!targetInput) return;
+
+    quickPickState.targetInput = targetInput;
+    quickPickState.tipoCatalogo = tipoCatalogo;
+    quickPickState.selectedIndex = -1;
+
+    document.getElementById('quickpick-titulo').textContent = `Seleccionar ${titulo}`;
+    const inputBusqueda = document.getElementById('quickpick-input-busqueda');
+    
+    // Si la casilla ya tiene texto, iniciar la búsqueda con ese valor
+    inputBusqueda.value = targetInput.value.trim();
+
+    const overlay = document.getElementById('quickpick-modal');
+    overlay.classList.add('active');
+
+    filtrarYRenderizarQuickPick(inputBusqueda.value);
+
+    setTimeout(() => {
+        inputBusqueda.focus();
+        inputBusqueda.select();
+    }, 50);
 }
+
+function filtrarYRenderizarQuickPick(criterio = '') {
+    const listaUl = document.getElementById('quickpick-lista');
+    listaUl.innerHTML = '';
+
+    const opciones = catalogosMemoria[quickPickState.tipoCatalogo] || [];
+    const termino = criterio.toLowerCase().trim();
+
+    quickPickState.opcionesFiltradas = termino
+        ? opciones.filter(opt => opt.toLowerCase().includes(termino))
+        : opciones;
+
+    quickPickState.selectedIndex = -1;
+
+    if (quickPickState.opcionesFiltradas.length === 0) {
+        listaUl.innerHTML = '<li class="quickpick-empty">No se encontraron coincidencias en el catálogo</li>';
+        return;
+    }
+
+    quickPickState.opcionesFiltradas.forEach((optText) => {
+        const li = document.createElement('li');
+        li.className = 'quickpick-item';
+        li.textContent = optText;
+
+        li.addEventListener('click', () => {
+            seleccionarOpcionQuickPick(optText);
+        });
+
+        listaUl.appendChild(li);
+    });
+}
+
+function seleccionarOpcionQuickPick(valorSeleccionado) {
+    if (quickPickState.targetInput) {
+        quickPickState.targetInput.value = valorSeleccionado;
+
+        // Centrar mapa si el campo seleccionado es la colonia
+        if (quickPickState.targetInput.id.includes('colonia')) {
+            centrarMapaEnColonia(valorSeleccionado);
+        }
+    }
+    cerrarQuickPick();
+}
+
+function cerrarQuickPick() {
+    const overlay = document.getElementById('quickpick-modal');
+    if (overlay) overlay.classList.remove('active');
+
+    if (quickPickState.targetInput) {
+        quickPickState.targetInput.focus();
+    }
+}
+
+// Vincula las entradas de texto al selector Quick-Pick
+function vincularSelectorQuickPick(inputId, titulo, tipoCatalogo) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    input.removeAttribute('list');
+    input.setAttribute('readonly', 'readonly'); // Evita la edición directa para obligar a seleccionar del catálogo
+    input.style.cursor = 'pointer';
+    input.placeholder = `Haga clic para seleccionar ${titulo.toLowerCase()}...`;
+
+    // Abrir selector con clic o tecla Enter/Espacio
+    input.addEventListener('click', () => {
+        abrirQuickPick(titulo, tipoCatalogo, inputId);
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            abrirQuickPick(titulo, tipoCatalogo, inputId);
+        }
+    });
+}
+
+// Reemplazo completo de aplicarRestriccionesCatalogos
+function aplicarRestriccionesCatalogos() {
+    // Formulario principal (Nueva Ficha)
+    vincularSelectorQuickPick('medio-reporte', 'Medio de Reporte', 'medios');
+    vincularSelectorQuickPick('colonia', 'Colonia o Comisaría', 'colonias');
+    vincularSelectorQuickPick('tipo-auxilio', 'Tipo de Auxilio', 'auxilios');
+    vincularSelectorQuickPick('unidad', 'Unidad que Atiende', 'unidades');
+
+    // Formulario del Modal de Edición
+    vincularSelectorQuickPick('edit-medio-reporte', 'Medio de Reporte', 'medios');
+    vincularSelectorQuickPick('edit-colonia', 'Colonia o Comisaría', 'colonias');
+    vincularSelectorQuickPick('edit-tipo-auxilio', 'Tipo de Auxilio', 'auxilios');
+    vincularSelectorQuickPick('edit-unidad', 'Unidad que Atiende', 'unidades');
+}
+
+
+// Notificación flotante visual sin bloquear el foco de Electron
+function mostrarNotificacionFiltro(mensaje) {
+    let toast = document.getElementById('toast-alerta-catalogo');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-alerta-catalogo';
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: #ef4444;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            z-index: 10000;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 0;
+            transform: translateY(10px);
+            pointer-events: none;
+        `;
+        document.body.appendChild(toast);
+    }
+
+    toast.innerText = mensaje;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+
+    clearTimeout(window.toastTimerCatalogo);
+    window.toastTimerCatalogo = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+    }, 3500);
+}
+
 
 function actualizarContadores(fichas) {
     let pendientes = 0;
@@ -288,31 +450,77 @@ function iniciarFiltrosYBusqueda(fichasOriginales) {
     const btnTodo = document.getElementById('filtro-todo');
     const btnPendientes = document.getElementById('filtro-pendientes');
     const inputBusqueda = document.getElementById('busqueda-fichas');
+    const inputFecha = document.getElementById('filtro-fecha');
+    let estadoFiltro = 'TODO';
+    const mesActivo = fichasOriginales.length > 0 && fichasOriginales[0].fecha
+        ? fichasOriginales[0].fecha.substring(0, 7)
+        : new Date().toISOString().substring(0, 7);
+    function aplicarFiltros() {
+        const termino = inputBusqueda.value.toLowerCase().trim();
+        const fechaSeleccionada = inputFecha ? inputFecha.value : ''; // Formato "YYYY-MM-DD"
 
+        if (fechaSeleccionada) {
+            const mesSeleccionado = fechaSeleccionada.substring(0, 7);
+            if (mesSeleccionado !== mesActivo) {
+                mostrarNotificacion(`⚠️ La fecha (${fechaSeleccionada}) no pertenece al mes en turno (${mesActivo}).`, 'warning');
+                inputFecha.value = '';
+                aplicarFiltros();
+                return;
+            }
+        }
+
+        const fichasFiltradas = fichasOriginales.filter(f => {
+            // 1. Filtro por Estado (Todo / Pendiente)
+            if (estadoFiltro === 'PENDIENTE' && f.estado !== 'PENDIENTE') {
+                return false;
+            }
+
+            // 2. Filtro por Fecha exacta
+            if (fechaSeleccionada && f.fecha !== fechaSeleccionada) {
+                return false;
+            }
+
+            // 3. Filtro por Texto (Tipo, Dirección, Colonia, Unidad, Descripción, Capturista)
+            if (termino) {
+                const tituloAux = f.tipoAuxilio || f.tipo || f.titulo || '';
+                const coincideTexto = (
+                    tituloAux.toLowerCase().includes(termino) ||
+                    (f.direccion && f.direccion.toLowerCase().includes(termino)) ||
+                    (f.colonia && f.colonia.toLowerCase().includes(termino)) ||
+                    (f.unidad && f.unidad.toLowerCase().includes(termino)) ||
+                    (f.descripcion && f.descripcion.toLowerCase().includes(termino)) ||
+                    (f.capturista && f.capturista.toLowerCase().includes(termino))
+                );
+                if (!coincideTexto) return false;
+            }
+
+            return true;
+        });
+
+        renderizarFichasFiltradas(fichasFiltradas);
+    }
+
+    // Eventos de botones de estado
     btnTodo.addEventListener('click', () => {
+        estadoFiltro = 'TODO';
         btnTodo.classList.add('active');
         btnPendientes.classList.remove('active');
-        renderizarFichasFiltradas(fichasOriginales);
+        aplicarFiltros();
     });
 
     btnPendientes.addEventListener('click', () => {
+        estadoFiltro = 'PENDIENTE';
         btnPendientes.classList.add('active');
         btnTodo.classList.remove('active');
-        const soloPendientes = fichasOriginales.filter(f => f.estado === 'PENDIENTE');
-        renderizarFichasFiltradas(soloPendientes);
+        aplicarFiltros();
     });
 
-    inputBusqueda.addEventListener('input', (e) => {
-        const termino = e.target.value.toLowerCase();
-        const fichasFiltradas = fichasOriginales.filter(f => {
-            const tituloAux = f.tipoAuxilio || f.tipo || f.titulo || '';
-            return (
-                tituloAux.toLowerCase().includes(termino) ||
-                (f.direccion && f.direccion.toLowerCase().includes(termino))
-            );
-        });
-        renderizarFichasFiltradas(fichasFiltradas);
-    });
+    // Eventos de entrada de texto y selección de fecha
+    inputBusqueda.addEventListener('input', aplicarFiltros);
+
+    if (inputFecha) {
+        inputFecha.addEventListener('change', aplicarFiltros);
+    }
 
     function renderizarFichasFiltradas(datos) {
         contenedorFichas.innerHTML = '';
@@ -321,7 +529,10 @@ function iniciarFiltrosYBusqueda(fichasOriginales) {
                 contenedorFichas.appendChild(crearTarjetaFicha(f));
             });
         } else {
-            contenedorFichas.innerHTML = '<p style="grid-column: 1 / -1; color: #6b7280; text-align: center;">No se encontraron fichas con esos criterios.</p>';
+            contenedorFichas.innerHTML = `
+                <p style="grid-column: 1 / -1; color: #6b7280; text-align: center; padding: 20px;">
+                    No se encontraron fichas para los criterios seleccionados.
+                </p>`;
         }
     }
 }
@@ -378,36 +589,6 @@ function crearTarjetaFicha(ficha) {
     });
 
     return tarjeta;
-}
-
-function abrirModalFicha(ficha) {
-    const modal = document.getElementById('modal-ficha');
-    const contenido = document.getElementById('contenido-modal-ficha');
-    const tituloAux = ficha.tipoAuxilio || ficha.tipo || ficha.titulo || 'Sin tipo';
-
-    contenido.innerHTML = `
-        <p><strong>Tipo de Auxilio:</strong> ${tituloAux}</p>
-        <p><strong>Estado:</strong> ${ficha.estado}</p>
-        <p><strong>Veracidad:</strong> ${ficha.veracidad}</p>
-        <p><strong>Fecha/Hora:</strong> ${ficha.fecha} a las ${ficha.hora}</p>
-        <p><strong>Ubicación:</strong> ${ficha.direccion}, ${ficha.colonia}</p>
-        <p><strong>Reporte por:</strong> ${ficha.medio}</p>
-        <p><strong>Atiende:</strong> ${ficha.unidad}</p>
-        <p><strong>Descripción:</strong></p>
-        <div style="background: var(--hover-sidebar); padding: 10px; border-radius: 6px; margin-bottom: 10px;">
-            ${ficha.descripcion}
-        </div>
-        <p><strong>Coordenadas:</strong> ${ficha.latitud || 'No asignadas'}, ${ficha.longitud || 'No asignadas'}</p>
-        <p>
-            <a href="https://www.google.com/maps?q=${ficha.latitud},${ficha.longitud}" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: bold;">
-                📍 Abrir en Google Maps
-            </a>
-        </p>
-        <hr style="border: 0; border-top: 1px solid var(--border-input); margin: 15px 0;">
-        <p><small>Capturado por: ${ficha.capturista}</small></p>
-    `;
-
-    modal.style.display = 'flex';
 }
 
 if (document.getElementById('btn-cerrar-modal')) {
@@ -487,6 +668,185 @@ async function centrarMapaEnColonia(nombreColonia) {
     }
 }
 
+// Lógica de veracidad para el modal de EDICIÓN
+function actualizarOpcionesVeracidadEdit() {
+    const selectEstado = document.getElementById('edit-estado');
+    const selectVeracidad = document.getElementById('edit-veracidad');
+    if (!selectEstado || !selectVeracidad) return;
+
+    const estado = selectEstado.value;
+    selectVeracidad.innerHTML = '';
+
+    if (estado === 'PENDIENTE') {
+        const opt = document.createElement('option');
+        opt.value = 'Pendiente';
+        opt.textContent = 'Pendiente de verificar';
+        opt.selected = true;
+        selectVeracidad.appendChild(opt);
+        selectVeracidad.disabled = true;
+    } else if (estado === 'LISTO') {
+        selectVeracidad.disabled = false;
+
+        const optReal = document.createElement('option');
+        optReal.value = 'Verdadera';
+        optReal.textContent = 'Reporte Real';
+
+        const optFalso = document.createElement('option');
+        optFalso.value = 'Falsa';
+        optFalso.textContent = 'Reporte Falso';
+
+        selectVeracidad.appendChild(optReal);
+        selectVeracidad.appendChild(optFalso);
+    } else if (estado === 'CANALIZADO') {
+        const opt = document.createElement('option');
+        opt.value = 'Canalizado';
+        opt.textContent = 'Reporte Canalizado';
+        opt.selected = true;
+        selectVeracidad.appendChild(opt);
+        selectVeracidad.disabled = true;
+    }
+}
+
+// Función para abrir y popular el modal de edición
+function abrirModalEdicion(ficha) {
+    fichaEditandoActual = ficha;
+
+    document.getElementById('edit-id').value = ficha.id;
+    document.getElementById('edit-fecha').value = ficha.fecha;
+    document.getElementById('edit-hora').value = ficha.hora;
+    document.getElementById('edit-tipo-auxilio').value = ficha.tipoAuxilio || ficha.tipo || ficha.titulo || '';
+    document.getElementById('edit-medio-reporte').value = ficha.medio || '';
+    document.getElementById('edit-direccion').value = ficha.direccion || '';
+    document.getElementById('edit-colonia').value = ficha.colonia || '';
+    document.getElementById('edit-descripcion').value = ficha.descripcion || '';
+    document.getElementById('edit-unidad').value = ficha.unidad || '';
+
+    const selectEstado = document.getElementById('edit-estado');
+    selectEstado.value = ficha.estado || 'PENDIENTE';
+
+    // Actualizar las opciones de veracidad según el estado cargado
+    actualizarOpcionesVeracidadEdit();
+
+    // Seleccionar la veracidad actual si está en estado LISTO
+    if (ficha.estado === 'LISTO') {
+        document.getElementById('edit-veracidad').value = ficha.veracidad || 'Verdadera';
+    }
+
+    // Cerrar modal de detalles si está abierto y mostrar el de edición
+    document.getElementById('modal-ficha').style.display = 'none';
+    document.getElementById('modal-editar-ficha').style.display = 'flex';
+}
+
+// Agregar el botón de Editar dentro del modal de detalles (en abrirModalFicha)
+function abrirModalFicha(ficha) {
+    const modal = document.getElementById('modal-ficha');
+    const contenido = document.getElementById('contenido-modal-ficha');
+    const tituloAux = ficha.tipoAuxilio || ficha.tipo || ficha.titulo || 'Sin tipo';
+    const tieneCoordenadas = ficha.latitud && ficha.longitud;
+    const urlGoogleMaps = tieneCoordenadas
+        ? `https://www.google.com/maps?q=${ficha.latitud},${ficha.longitud}`
+        : null;
+
+
+    contenido.innerHTML = `
+        <p><strong>Tipo de Auxilio:</strong> ${tituloAux}</p>
+        <p><strong>Estado:</strong> ${ficha.estado}</p>
+        <p><strong>Veracidad:</strong> ${ficha.veracidad}</p>
+        <p><strong>Fecha/Hora:</strong> ${ficha.fecha} a las ${ficha.hora}</p>
+        <p><strong>Ubicación:</strong> ${ficha.direccion}, ${ficha.colonia}</p>
+        <p><strong>Reporte por:</strong> ${ficha.medio}</p>
+        <p><strong>Atiende:</strong> ${ficha.unidad}</p>
+        <p><strong>Descripción:</strong></p>
+        <div style="background: var(--hover-sidebar); padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+            ${ficha.descripcion}
+        </div>
+        <p><strong>Coordenadas:</strong> ${ficha.latitud || 'No asignadas'}, ${ficha.longitud || 'No asignadas'}</p>
+        <p>
+            <a href="https://www.google.com/maps?q=${ficha.latitud},${ficha.longitud}" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: bold;">
+                📍 Abrir en Google Maps
+            </a>
+        </p>
+        <hr style="border: 0; border-top: 1px solid var(--border-input); margin: 15px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <small>Capturado por: ${ficha.capturista}</small>
+            <button id="btn-copiar-desde-modal" class="btn-submit" style="width: auto; padding: 6px 14px; margin: 0; background-color: #10b981;"> Copiar Datos </button>
+            <button id="btn-editar-desde-modal" class="btn-submit" style="width: auto; padding: 6px 16px; margin: 0;"> Editar Ficha </button>
+        </div>
+    `;
+
+    document.getElementById('btn-editar-desde-modal').addEventListener('click', () => {
+        abrirModalEdicion(ficha);
+    });
+
+    document.getElementById('btn-copiar-desde-modal').addEventListener('click', async () => {
+        const textoACopiar = `${ficha.hora} Horas, ${tituloAux}
+
+${ficha.direccion}, ${ficha.colonia} Reporta ${ficha.medio} ${ficha.descripcion}`;
+
+        try {
+            await navigator.clipboard.writeText(textoACopiar);
+            const btnCopiar = document.getElementById('btn-copiar-desde-modal');
+
+            // Retroalimentación visual
+            btnCopiar.innerText = '¡Copiado! ✓';
+            btnCopiar.style.backgroundColor = '#059669';
+
+            setTimeout(() => {
+                if (btnCopiar) {
+                    btnCopiar.innerText = 'Copiar Datos';
+                    btnCopiar.style.backgroundColor = '#10b981';
+                }
+            }, 2000);
+        } catch (err) {
+            console.error('Error al copiar al portapapeles:', err);
+            mostrarNotificacion('❌ No se pudo copiar la información al portapapeles.', 'error');
+        }
+    });
+
+    modal.style.display = 'flex';
+}
+
+// Cierre del modal de edición
+if (document.getElementById('btn-cerrar-modal-editar')) {
+    document.getElementById('btn-cerrar-modal-editar').addEventListener('click', () => {
+        document.getElementById('modal-editar-ficha').style.display = 'none';
+    });
+}
+
+// Evento Submit del formulario de edición
+const formEditarFicha = document.getElementById('form-editar-ficha');
+if (formEditarFicha) {
+    formEditarFicha.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const fichaActualizada = {
+            id: document.getElementById('edit-id').value,
+            fecha: document.getElementById('edit-fecha').value,
+            hora: document.getElementById('edit-hora').value,
+            tipoAuxilio: document.getElementById('edit-tipo-auxilio').value,
+            medio: document.getElementById('edit-medio-reporte').value,
+            direccion: document.getElementById('edit-direccion').value,
+            colonia: document.getElementById('edit-colonia').value,
+            descripcion: document.getElementById('edit-descripcion').value,
+            unidad: document.getElementById('edit-unidad').value,
+            estado: document.getElementById('edit-estado').value,
+            veracidad: document.getElementById('edit-veracidad').value,
+            latitud: fichaEditandoActual ? fichaEditandoActual.latitud : '',
+            longitud: fichaEditandoActual ? fichaEditandoActual.longitud : ''
+        };
+
+        const respuesta = await window.api.actualizarFicha(fichaActualizada);
+
+        if (respuesta.success) {
+            document.getElementById('modal-editar-ficha').style.display = 'none';
+            mostrarNotificacion('✓ Ficha actualizada correctamente.', 'success');
+            cargarFichas();
+        } else {
+            mostrarNotificacion('❌ Error al actualizar la ficha: ' + respuesta.message, 'error');
+        }
+    });
+}
+
 if (formFicha) {
     // Evita que presionar 'Enter' dentro de un input envíe el formulario
     formFicha.addEventListener('keydown', (e) => {
@@ -529,9 +889,55 @@ if (formFicha) {
             if (document.getElementById('estado')) document.getElementById('estado').value = 'PENDIENTE';
             actualizarOpcionesVeracidad();
 
+            mostrarNotificacion('✓ Ficha guardada exitosamente.', 'success');
             cargarFichas();
         } else {
-            alert('Error al guardar: ' + respuesta.message);
+            mostrarNotificacion('❌ Error al guardar: ' + respuesta.message, 'error');
         }
     });
+}
+
+// Sistema unificado de notificaciones Toast (evita bloqueo de foco en Electron)
+function mostrarNotificacion(mensaje, tipo = 'info') {
+    let toast = document.getElementById('toast-alerta-global');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-alerta-global';
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            z-index: 10000;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 0;
+            transform: translateY(10px);
+            pointer-events: none;
+        `;
+        document.body.appendChild(toast);
+    }
+
+    // Colores según el tipo de notificación
+    const colores = {
+        error: '#ef4444',   // Rojo
+        warning: '#f59e0b', // Amarillo / Ámbar
+        success: '#10b981', // Verde
+        info: '#3b82f6'     // Azul
+    };
+
+    toast.style.backgroundColor = colores[tipo] || colores.info;
+    toast.innerText = mensaje;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+
+    clearTimeout(window.toastTimerGlobal);
+    window.toastTimerGlobal = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+    }, 3500);
 }

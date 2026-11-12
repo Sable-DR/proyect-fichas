@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novedades en turno</title>
+    <title>NOVEDADES DEL TURNO</title>
     <link rel="stylesheet" href="dashboard.css">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -16,7 +16,7 @@
 
 
     <header>
-        <div style="font-weight: bold; font-size: 1.2rem;">Novedades en turno</div>
+        <div style="font-weight: bold; font-size: 1.2rem;">FICHAS EN TURNO</div>
         <div class="user-menu-container" style="position: relative;">
             <button id="user-menu-btn" class="user-menu-btn">
                 <span id="header-username">Hola, Usuario</span>
@@ -88,7 +88,7 @@
                 <div class="form-group">
                     <select id="veracidad" required></select>
                 </div>
-                
+
                 <div id="map-formulario"
                     style="height: 250px; width: 100%; border-radius: 8px; margin-bottom: 15px; border: 1px solid #4b5563;">
                 </div>
@@ -129,8 +129,13 @@
                         <button id="filtro-pendientes" class="btn-filter">PENDIENTES</button>
                     </div>
 
+                    <div class="date-box">
+                        <input type="date" id="filtro-fecha" class="input-fecha-filtro"
+                            title="Filtrar por día específico">
+                    </div>
+
                     <div class="search-box">
-                        <input type="text" id="busqueda-fichas" placeholder="Buscar por tipo o dirección...">
+                        <input type="text" id="busqueda-fichas" placeholder="Buscar por tipo, dirección, colonia...">
                     </div>
                 </div>
             </div>
@@ -153,6 +158,79 @@
             <div id="contenido-modal-ficha"></div>
         </div>
     </div>
+
+    <!-- Modal de Edición de Ficha -->
+    <div id="modal-editar-ficha" class="modal-overlay">
+        <div class="modal-content">
+            <span id="btn-cerrar-modal-editar" class="modal-close-btn">×</span>
+            <h2
+                style="margin-top: 0; border-bottom: 2px solid var(--border-input); padding-bottom: 10px; color: var(--primary-color);">
+                Editar Ficha
+            </h2>
+
+            <form id="form-editar-ficha">
+                <input type="hidden" id="edit-id">
+
+                <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 1rem;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Fecha:</label>
+                        <input type="date" id="edit-fecha" required>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Hora:</label>
+                        <input type="time" id="edit-hora" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de Auxilio:</label>
+                    <input type="text" id="edit-tipo-auxilio" list="list-auxilios" required autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label>Medio del Reporte:</label>
+                    <input type="text" id="edit-medio-reporte" list="list-medios" required autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label>Dirección Exacta:</label>
+                    <input type="text" id="edit-direccion" required autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label>Colonia / Comisaría:</label>
+                    <input type="text" id="edit-colonia" list="list-colonias" required autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción:</label>
+                    <textarea id="edit-descripcion" rows="3" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Unidad que Atiende:</label>
+                    <input type="text" id="edit-unidad" list="list-unidades" required autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label>Estado:</label>
+                    <select id="edit-estado" required>
+                        <option value="PENDIENTE">PENDIENTE</option>
+                        <option value="LISTO">LISTO</option>
+                        <option value="CANALIZADO">CANALIZADO</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Veracidad del Reporte:</label>
+                    <select id="edit-veracidad" required></select>
+                </div>
+
+                <button type="submit" class="btn-submit" style="margin-top: 15px;">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+
 
     <script src="dashboard.js"></script>
 </body>

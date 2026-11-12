@@ -110,7 +110,10 @@ function crearUsuarioPorDefecto() {
 
 function precargarCatalogos() {
 
-  const unidades = ['AMBULANCIA DE TRASLADO 673',
+  const unidades = 
+  [ 'CANALIZADO',
+    'ELEMENTO POLICIAL PIE TIERRA',
+    'AMBULANCIA DE TRASLADO 673',
     'AMBULANCIA DE TRASLADO 094',
     'VM001',
     'VM002',
@@ -353,7 +356,9 @@ function precargarCatalogos() {
   medios.forEach((m) => stmtMedios.run(m));
   stmtMedios.finalize();
 
-  const coloniasIniciales = ['Avenida 4 de Junio',
+  const coloniasIniciales = 
+  ['CANALIZADO',
+    'Avenida 4 de Junio',
     'Avenida Victor Cervera Pacheco',
     'Avenida Zacihual',
     'Avenida de los Frailes',
