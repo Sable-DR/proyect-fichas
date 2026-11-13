@@ -361,8 +361,16 @@ async function actualizarCoordenadasEdicion(nombreColonia) {
         const resultados = await respuesta.json();
 
         if (resultados && resultados.length > 0) {
-            fichaEditandoActual.latitud = parseFloat(resultados[0].lat).toString();
-            fichaEditandoActual.longitud = parseFloat(resultados[0].lon).toString();
+            const lat = parseFloat(resultados[0].lat);
+            const lng = parseFloat(resultados[0].lon);
+
+            fichaEditandoActual.latitud = lat.toString();
+            fichaEditandoActual.longitud = lng.toString();
+
+            if (mapEdit && markerEdit) {
+                markerEdit.setLatLng([lat, lng]);
+                mapEdit.setView([lat, lng], 15);
+            }
         }
     } catch (error) {
         console.error('Error al actualizar coordenadas en edición:', error);
@@ -688,8 +696,45 @@ function initMapaFormulario() {
 
 initMapaFormulario();
 
+let mapEdit = null;
+let markerEdit = null;
 
-// Función para buscar la colonia/comisaría y centrar el marcador
+function initOCentrarMapaEdicion(lat, lng) {
+    const latNum = parseFloat(lat) || 20.6896;
+    const lngNum = parseFloat(lng) || -88.2015;
+    const zoomNivel = (parseFloat(lat) && parseFloat(lng)) ? 15 : 14;
+
+    if (!mapEdit) {
+        mapEdit = L.map('map-edicion').setView([latNum, lngNum], zoomNivel);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(mapEdit);
+
+        markerEdit = L.marker([latNum, lngNum], {
+            draggable: true
+        }).addTo(mapEdit);
+
+        // Actualizar coordenadas en tiempo real al soltar el marcador
+        markerEdit.on('dragend', function () {
+            const posicion = markerEdit.getLatLng();
+            if (fichaEditandoActual) {
+                fichaEditandoActual.latitud = posicion.lat.toString();
+                fichaEditandoActual.longitud = posicion.lng.toString();
+            }
+        });
+    } else {
+        markerEdit.setLatLng([latNum, lngNum]);
+        mapEdit.setView([latNum, lngNum], zoomNivel);
+    }
+
+    // Recalcular dimensiones del mapa una vez que el modal ya es visible
+    setTimeout(() => {
+        if (mapEdit) mapEdit.invalidateSize();
+    }, 100);
+}
+
 async function centrarMapaEnColonia(nombreColonia) {
     if (!nombreColonia.trim()) return;
 
@@ -791,9 +836,10 @@ function abrirModalEdicion(ficha) {
     // Cerrar modal de detalles si está abierto y mostrar el de edición
     document.getElementById('modal-ficha').style.display = 'none';
     document.getElementById('modal-editar-ficha').style.display = 'flex';
+
+    initOCentrarMapaEdicion(ficha.latitud, ficha.longitud);
 }
 
-// Agregar el botón de Editar dentro del modal de detalles (en abrirModalFicha)
 function abrirModalFicha(ficha) {
     const modal = document.getElementById('modal-ficha');
     const contenido = document.getElementById('contenido-modal-ficha');
@@ -803,9 +849,13 @@ function abrirModalFicha(ficha) {
         ? `https://www.google.com/maps?q=${ficha.latitud},${ficha.longitud}`
         : null;
 
-
     contenido.innerHTML = `
-        <p><strong>Tipo de Auxilio:</strong> ${tituloAux}</p>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px;">
+            <p style="margin: 0;"><strong>Tipo de Auxilio:</strong> ${tituloAux}</p>
+            <button id="btn-copiar-completo-modal" type="button" style="background-color: #4f46e5; color: #ffffff; border: none; padding: 5px 12px; border-radius: 5px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background-color 0.2s;">
+                Copiar Ficha
+            </button>
+        </div>
         <p><strong>Estado:</strong> ${ficha.estado}</p>
         <p><strong>Veracidad:</strong> ${ficha.veracidad}</p>
         <p><strong>Fecha/Hora:</strong> ${ficha.fecha} a las ${ficha.hora}</p>
@@ -816,7 +866,7 @@ function abrirModalFicha(ficha) {
         <div style="background: var(--hover-sidebar); padding: 10px; border-radius: 6px; margin-bottom: 10px;">
             ${ficha.descripcion}
         </div>
-        <p><strong>Coordenadas:</strong> ${ficha.latitud || 'No asignadas'}, ${ficha.longitud || 'No asignadas'}</p>
+        <p><strong>Coordenadas:</strong> ${tieneCoordenadas ? `${ficha.latitud}, ${ficha.longitud}` : 'No asignadas'}</p>
         <p>
             ${urlGoogleMaps
             ? `<a href="${urlGoogleMaps}" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: bold;">📍 Abrir en Google Maps</a>`
@@ -824,27 +874,65 @@ function abrirModalFicha(ficha) {
         }
         </p>
         <hr style="border: 0; border-top: 1px solid var(--border-input); margin: 15px 0;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
             <small>Capturado por: ${ficha.capturista}</small>
-            <button id="btn-copiar-desde-modal" class="btn-submit" style="width: auto; padding: 6px 14px; margin: 0; background-color: #10b981;"> Copiar Datos </button>
-            <button id="btn-editar-desde-modal" class="btn-submit" style="width: auto; padding: 6px 16px; margin: 0;"> Editar Ficha </button>
+            <div style="display: flex; gap: 8px;">
+                <button id="btn-copiar-desde-modal" class="btn-submit" style="width: auto; padding: 6px 14px; margin: 0; background-color: #10b981;">Copiar Datos</button>
+                <button id="btn-editar-desde-modal" class="btn-submit" style="width: auto; padding: 6px 16px; margin: 0;">Editar Ficha</button>
+            </div>
         </div>
     `;
 
-    document.getElementById('btn-editar-desde-modal').addEventListener('click', () => {
-        abrirModalEdicion(ficha);
+    // 1. Botón superior: Copia TODOS los campos de la ficha con etiquetas
+
+    document.getElementById('btn-copiar-completo-modal').addEventListener('click', async () => {
+        const lineasCompletas = `*${tituloAux}*
+
+*FECHA:* ${ficha.fecha}
+*HORA:* ${ficha.hora}
+*DIRECCIÓN:* ${ficha.direccion}
+*MEDIO DEL REPORTE:* ${ficha.medio}
+*UNIDAD QUE VERIFICA:* ${ficha.unidad}
+
+*DESCRIPCIÓN DE LOS HECHOS:*
+
+${ficha.descripcion}
+
+*MAPA GOOGLE MAPS:*
+${urlGoogleMaps}`;
+
+        try {
+            await navigator.clipboard.writeText(lineasCompletas);
+
+            const btnCompleto = document.getElementById('btn-copiar-completo-modal');
+
+            btnCompleto.innerText = '¡Copiado! ✓';
+            btnCompleto.style.backgroundColor = '#4f46e5';
+
+            setTimeout(() => {
+                if (btnCompleto) {
+                    btnCompleto.innerText = 'Copiar Ficha';
+                    btnCompleto.style.backgroundColor = '#6366f1';
+                }
+            }, 2000);
+
+        } catch (err) {
+            console.error('Error al copiar ficha completa:', err);
+            mostrarNotificacion('No se pudo copiar la ficha completa.', 'error');
+        }
     });
 
-    //Copiar datos de las fichas al portapapeles desde el modal
+
+    // 2. Botón inferior: Copia el formato corto original
     document.getElementById('btn-copiar-desde-modal').addEventListener('click', async () => {
         const textoACopiar = `${ficha.hora} Horas, ${tituloAux}
+
 ${ficha.direccion}, ${ficha.colonia} Reporta ${ficha.medio} ${ficha.descripcion}`;
 
         try {
             await navigator.clipboard.writeText(textoACopiar);
             const btnCopiar = document.getElementById('btn-copiar-desde-modal');
 
-            // Retroalimentación visual
             btnCopiar.innerText = '¡Copiado! ✓';
             btnCopiar.style.backgroundColor = '#059669';
 
@@ -860,14 +948,12 @@ ${ficha.direccion}, ${ficha.colonia} Reporta ${ficha.medio} ${ficha.descripcion}
         }
     });
 
-    modal.style.display = 'flex';
-}
-
-// Cierre del modal de edición
-if (document.getElementById('btn-cerrar-modal-editar')) {
-    document.getElementById('btn-cerrar-modal-editar').addEventListener('click', () => {
-        document.getElementById('modal-editar-ficha').style.display = 'none';
+    // 3. Botón Editar
+    document.getElementById('btn-editar-desde-modal').addEventListener('click', () => {
+        abrirModalEdicion(ficha);
     });
+
+    modal.style.display = 'flex';
 }
 
 // Evento Submit del formulario de edición
