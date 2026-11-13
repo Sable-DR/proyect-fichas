@@ -1,10 +1,10 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, MenuItem, session } = require('electron');
 const path = require('path');
 const db = require('./database.js');
 
 const AuthController = require('./controllers/AuthController');
 const FichaController = require('./controllers/FichaController');
-const CatalogoController = require('./controllers/CatalogoController'); // <-- Nuevo controlador
+const CatalogoController = require('./controllers/CatalogoController');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -13,7 +13,46 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      spellcheck: true
+    }
+  });
+
+  // Menú contextual (clic derecho) con sugerencias ortográficas y edición
+  win.webContents.on('context-menu', (event, params) => {
+    const menu = new Menu();
+
+    // Sugerencias de corrección si se hizo clic sobre una palabra subrayada
+    for (const suggestion of params.dictionarySuggestions) {
+      menu.append(new MenuItem({
+        label: suggestion,
+        click: () => win.webContents.replaceMisspelling(suggestion)
+      }));
+    }
+
+    // Permitir guardar nombres locales o términos propios en el diccionario
+    if (params.misspelledWord) {
+      if (params.dictionarySuggestions.length > 0) {
+        menu.append(new MenuItem({ type: 'separator' }));
+      }
+      menu.append(new MenuItem({
+        label: `Agregar "${params.misspelledWord}" al diccionario`,
+        click: () => win.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord)
+      }));
+      menu.append(new MenuItem({ type: 'separator' }));
+    }
+
+    // Opciones estándar de edición
+    if (params.isEditable) {
+      menu.append(new MenuItem({ label: 'Cortar', role: 'cut', enabled: params.editFlags.canCut }));
+      menu.append(new MenuItem({ label: 'Copiar', role: 'copy', enabled: params.editFlags.canCopy }));
+      menu.append(new MenuItem({ label: 'Pegar', role: 'paste', enabled: params.editFlags.canPaste }));
+    } else if (params.selectionText) {
+      menu.append(new MenuItem({ label: 'Copiar', role: 'copy' }));
+    }
+
+    if (menu.items.length > 0) {
+      menu.popup();
     }
   });
 
@@ -23,6 +62,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Configurar corrector ortográfico en español
+  session.defaultSession.setSpellCheckerLanguages(['es-MX', 'es']);
+
   createWindow();
 
   // Autenticación y Usuarios
@@ -67,7 +109,9 @@ ipcMain.handle('actualizar-ficha', async (event, ficha) => {
                 hora = ?, 
                 medio = ?, 
                 direccion = ?, 
-                colonia = ?
+                colonia = ?,
+                latitud = ?,
+                longitud = ?
             WHERE id = ?
         `;
 
@@ -83,6 +127,8 @@ ipcMain.handle('actualizar-ficha', async (event, ficha) => {
       ficha.medio,
       ficha.direccion,
       ficha.colonia,
+      ficha.latitud || '',
+      ficha.longitud || '',
       ficha.id
     ];
 

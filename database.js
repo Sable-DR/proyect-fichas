@@ -193,7 +193,8 @@ function precargarCatalogos() {
   unidades.forEach((u) => stmtUnidad.run(u));
   stmtUnidad.finalize();
 
-  const auxilios = ['Abuso de confianza',
+  const auxilios = 
+  [ 'Abuso de confianza',
     'Abuso sexual',
     'Activacion de alarma',
     'Activacion de alerta AMBER',
@@ -338,7 +339,8 @@ function precargarCatalogos() {
   auxilios.forEach((a) => stmtAuxilio.run(a));
   stmtAuxilio.finalize();
 
-  const medios = ['C5 via radio',
+  const medios = 
+  [ 'C5 via radio',
     'C5 via telefonica',
     'Via telefonica - Femenina',
     'Via telefonica - Masculino',
