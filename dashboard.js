@@ -22,6 +22,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userMenuBtn = document.getElementById('user-menu-btn');
     const dropdownMenu = document.getElementById('dropdown-menu');
 
+    const btnCerrarSesion = document.getElementById('btn-logout')
+        || document.getElementById('btn-cerrar-sesion')
+        || document.querySelector('#dropdown-menu a.text-danger');
+
+    if (btnCerrarSesion) {
+        btnCerrarSesion.addEventListener('click', (e) => {
+            e.preventDefault();
+
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userFullName');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userRol');
+
+            window.location.href = 'index.html';
+        });
+    }
+
     if (userMenuBtn && dropdownMenu) {
         userMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -269,9 +286,10 @@ function abrirQuickPick(titulo, tipoCatalogo, inputId) {
 
     document.getElementById('quickpick-titulo').textContent = `Seleccionar ${titulo}`;
     const inputBusqueda = document.getElementById('quickpick-input-busqueda');
-    
-    // Si la casilla ya tiene texto, iniciar la búsqueda con ese valor
-    inputBusqueda.value = targetInput.value.trim();
+
+    // Si la casilla dice "PENDIENTE", abrir el buscador vacío para facilitar la edición
+    const valorActual = targetInput.value.trim();
+    inputBusqueda.value = (valorActual.toUpperCase() === 'PENDIENTE') ? '' : valorActual;
 
     const overlay = document.getElementById('quickpick-modal');
     overlay.classList.add('active');
@@ -319,12 +337,36 @@ function seleccionarOpcionQuickPick(valorSeleccionado) {
     if (quickPickState.targetInput) {
         quickPickState.targetInput.value = valorSeleccionado;
 
-        // Centrar mapa si el campo seleccionado es la colonia
-        if (quickPickState.targetInput.id.includes('colonia')) {
+        if (quickPickState.targetInput.id === 'colonia') {
             centrarMapaEnColonia(valorSeleccionado);
+        } else if (quickPickState.targetInput.id === 'edit-colonia') {
+            actualizarCoordenadasEdicion(valorSeleccionado);
         }
     }
     cerrarQuickPick();
+}
+
+async function actualizarCoordenadasEdicion(nombreColonia) {
+    if (!nombreColonia.trim() || !fichaEditandoActual) return;
+
+    const nombreLimpio = nombreColonia
+        .replace(/^(comisaria|comisaría)\s+(de\s+)?/i, '')
+        .trim();
+
+    const busqueda = encodeURIComponent(`${nombreLimpio}, Valladolid, Yucatán`);
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${busqueda}&limit=1`;
+
+    try {
+        const respuesta = await fetch(url);
+        const resultados = await respuesta.json();
+
+        if (resultados && resultados.length > 0) {
+            fichaEditandoActual.latitud = parseFloat(resultados[0].lat).toString();
+            fichaEditandoActual.longitud = parseFloat(resultados[0].lon).toString();
+        }
+    } catch (error) {
+        console.error('Error al actualizar coordenadas en edición:', error);
+    }
 }
 
 function cerrarQuickPick() {
@@ -540,9 +582,22 @@ function iniciarFiltrosYBusqueda(fichasOriginales) {
 function crearTarjetaFicha(ficha) {
     const tarjeta = document.createElement('div');
     const estadoClase = ficha.estado ? ficha.estado.toLowerCase() : 'pendiente';
+
+    const tieneDatosPendientes = [
+        ficha.medio,
+        ficha.direccion,
+        ficha.colonia,
+        ficha.unidad,
+        ficha.descripcion
+    ].some(val => val && val.trim().toUpperCase() === 'PENDIENTE');
+
+    const badgeDatosIncompletos = tieneDatosPendientes
+        ? `<div style="display: inline-block; background: rgba(245, 158, 11, 0.15); color: #f50b0b; border: 1px solid #f50b0b; font-size: 0.72rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; margin-top: 4px;">FICHA RAPIDA / DATOS INCOMPLETOS</div>`
+        : '';
+
     tarjeta.className = `ficha-card estado-${estadoClase}`;
 
-    // TÍTULO DE LA TARJETA VIENE DEL TIPO DE AUXILIO
+
     const tituloTarjeta = ficha.tipoAuxilio || ficha.tipo || ficha.titulo || 'Sin Tipo de Auxilio';
 
     let veracidadText = 'REPORTE REAL';
@@ -572,6 +627,7 @@ function crearTarjetaFicha(ficha) {
             <span class="badge ${estadoMostrar === 'PENDIENTE' ? 'bg-warning' : (estadoMostrar === 'CANALIZADO' ? 'bg-info' : 'bg-success')}" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 4px;">${estadoMostrar}</span>
         </div>
         <div class="ficha-body">
+        ${badgeDatosIncompletos}
             <p style="color: ${veracidadColor}; font-weight: bold; font-size: 0.8rem; margin-top: 5px; margin-bottom: 5px;">
                 ${veracidadText}
             </p>
@@ -762,9 +818,10 @@ function abrirModalFicha(ficha) {
         </div>
         <p><strong>Coordenadas:</strong> ${ficha.latitud || 'No asignadas'}, ${ficha.longitud || 'No asignadas'}</p>
         <p>
-            <a href="https://www.google.com/maps?q=${ficha.latitud},${ficha.longitud}" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: bold;">
-                📍 Abrir en Google Maps
-            </a>
+            ${urlGoogleMaps
+            ? `<a href="${urlGoogleMaps}" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: bold;">📍 Abrir en Google Maps</a>`
+            : `<span style="color: #9ca3af; font-style: italic;">📍 Ubicación en mapa no asignada</span>`
+        }
         </p>
         <hr style="border: 0; border-top: 1px solid var(--border-input); margin: 15px 0;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -778,9 +835,9 @@ function abrirModalFicha(ficha) {
         abrirModalEdicion(ficha);
     });
 
+    //Copiar datos de las fichas al portapapeles desde el modal
     document.getElementById('btn-copiar-desde-modal').addEventListener('click', async () => {
         const textoACopiar = `${ficha.hora} Horas, ${tituloAux}
-
 ${ficha.direccion}, ${ficha.colonia} Reporta ${ficha.medio} ${ficha.descripcion}`;
 
         try {
@@ -799,7 +856,7 @@ ${ficha.direccion}, ${ficha.colonia} Reporta ${ficha.medio} ${ficha.descripcion}
             }, 2000);
         } catch (err) {
             console.error('Error al copiar al portapapeles:', err);
-            mostrarNotificacion('❌ No se pudo copiar la información al portapapeles.', 'error');
+            mostrarNotificacion('No se pudo copiar la información al portapapeles.', 'error');
         }
     });
 
@@ -842,7 +899,7 @@ if (formEditarFicha) {
             mostrarNotificacion('✓ Ficha actualizada correctamente.', 'success');
             cargarFichas();
         } else {
-            mostrarNotificacion('❌ Error al actualizar la ficha: ' + respuesta.message, 'error');
+            mostrarNotificacion('Error al actualizar la ficha: ' + respuesta.message, 'error');
         }
     });
 }
@@ -870,7 +927,27 @@ if (formFicha) {
         const fCol = document.getElementById('colonia').value;
         const fVerdad = document.getElementById('veracidad').value;
 
-        // Se envía fTipo como título para mantener compatibilidad con la base de datos
+        if (!fTipo.trim()) {
+            mostrarNotificacion('Selecciona el Tipo de Auxilio.', 'warning');
+            abrirQuickPick('Tipo de Auxilio', 'auxilios', 'tipo-auxilio');
+            return;
+        }
+        if (!fMedio.trim()) {
+            mostrarNotificacion('Selecciona el Medio de Reporte.', 'warning');
+            abrirQuickPick('Medio de Reporte', 'medios', 'medio-reporte');
+            return;
+        }
+        if (!fCol.trim()) {
+            mostrarNotificacion('Selecciona la Colonia o Comisaría.', 'warning');
+            abrirQuickPick('Colonia o Comisaría', 'colonias', 'colonia');
+            return;
+        }
+        if (!fUnidad.trim()) {
+            mostrarNotificacion('Selecciona la Unidad que Atiende.', 'warning');
+            abrirQuickPick('Unidad que Atiende', 'unidades', 'unidad');
+            return;
+        }
+
         const respuesta = await window.api.guardarFicha(
             userId, fTipo, fDesc, fTipo, fUnidad, fEstado,
             fFecha, fHora, fMedio, fDir, fCol, fVerdad, nombreParaGuardar,
@@ -892,9 +969,65 @@ if (formFicha) {
             mostrarNotificacion('✓ Ficha guardada exitosamente.', 'success');
             cargarFichas();
         } else {
-            mostrarNotificacion('❌ Error al guardar: ' + respuesta.message, 'error');
+            mostrarNotificacion('Error al guardar: ' + respuesta.message, 'error');
         }
     });
+
+    const btnRegistroRapido = document.getElementById('btn-registro-rapido');
+    if (btnRegistroRapido) {
+        btnRegistroRapido.addEventListener('click', async () => {
+            const fTipo = document.getElementById('tipo-auxilio').value.trim();
+
+            // Exigir únicamente el Tipo de Auxilio y abrir el selector si está vacío
+            if (!fTipo || fTipo.toUpperCase() === 'PENDIENTE') {
+                mostrarNotificacion('Selecciona al menos el Tipo de Auxilio para el registro rápido.', 'warning');
+                abrirQuickPick('Tipo de Auxilio', 'auxilios', 'tipo-auxilio');
+                return;
+            }
+
+            // Garantizar fecha y hora vigentes si estuvieran vacías
+            if (!document.getElementById('fecha').value || !document.getElementById('hora').value) {
+                setFechaHoraActuales();
+            }
+
+            const nombreParaGuardar = localStorage.getItem('userFullName') || localStorage.getItem('userName') || 'Usuario';
+            const fFecha = document.getElementById('fecha').value;
+            const fHora = document.getElementById('hora').value;
+
+            // Conservar cualquier dato ya capturado y rellenar los vacíos con "PENDIENTE"
+            const fMedio = document.getElementById('medio-reporte').value.trim() || 'PENDIENTE';
+            const fDir = document.getElementById('direccion').value.trim() || 'PENDIENTE';
+            const fCol = document.getElementById('colonia').value.trim() || 'PENDIENTE';
+            const fUnidad = document.getElementById('unidad').value.trim() || 'PENDIENTE';
+            const fDesc = document.getElementById('descripcion').value.trim() || 'PENDIENTE';
+            const fEstado = 'PENDIENTE';
+            const fVerdad = 'Pendiente';
+
+            const respuesta = await window.api.guardarFicha(
+                userId, fTipo, fDesc, fTipo, fUnidad, fEstado,
+                fFecha, fHora, fMedio, fDir, fCol, fVerdad, nombreParaGuardar,
+                latSelected.toString(), lngSelected.toString()
+            );
+
+            if (respuesta.success) {
+                formFicha.reset();
+
+                latSelected = 20.6896;
+                lngSelected = -88.2015;
+                markerForm.setLatLng([latSelected, lngSelected]);
+                mapForm.setView([latSelected, lngSelected], 14);
+                setFechaHoraActuales();
+
+                if (document.getElementById('estado')) document.getElementById('estado').value = 'PENDIENTE';
+                actualizarOpcionesVeracidad();
+
+                mostrarNotificacion('Ficha rápida registrada como PENDIENTE.', 'success');
+                cargarFichas();
+            } else {
+                mostrarNotificacion('Error al guardar registro rápido: ' + respuesta.message, 'error');
+            }
+        });
+    }
 }
 
 // Sistema unificado de notificaciones Toast (evita bloqueo de foco en Electron)

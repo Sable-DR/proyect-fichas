@@ -93,7 +93,11 @@
                     style="height: 250px; width: 100%; border-radius: 8px; margin-bottom: 15px; border: 1px solid #4b5563;">
                 </div>
 
-                <button type="submit" class="btn-submit">Guardar Ficha</button>
+                <div class="form-actions-group">
+                    <button type="submit" class="btn-submit">Guardar Ficha</button>
+                    <button type="button" id="btn-registro-rapido" class="btn-quick-save">Registro Rápido</button>
+                </div>
+
             </form>
         </aside>
 
@@ -129,13 +133,14 @@
                         <button id="filtro-pendientes" class="btn-filter">PENDIENTES</button>
                     </div>
 
-                    <div class="date-box">
-                        <input type="date" id="filtro-fecha" class="input-fecha-filtro"
-                            title="Filtrar por día específico">
-                    </div>
+
 
                     <div class="search-box">
                         <input type="text" id="busqueda-fichas" placeholder="Buscar por tipo, dirección, colonia...">
+                    </div>
+
+                    <div class="date-box">
+                        <input type="date" id="filtro-fecha" class="input-fecha-filtro">
                     </div>
                 </div>
             </div>
