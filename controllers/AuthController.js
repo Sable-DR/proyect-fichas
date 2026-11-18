@@ -15,8 +15,8 @@ class AuthController {
             const isMatch = bcrypt.compareSync(password, user.password);
 
             if (isMatch) {
-                return { 
-                    success: true, 
+                return {
+                    success: true,
                     userId: user.id,
                     nombreCompleto: user.nombre_completo,
                     rol: user.rol
@@ -74,13 +74,30 @@ class AuthController {
             }
 
             const newUser = await UserModel.create(username, nombreCompleto, password);
-            
-            return { 
-                success: true, 
+
+            return {
+                success: true,
                 userId: newUser.id,
                 nombreCompleto: nombreCompleto
             };
         } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    static async cambiarRolUsuario(event, id, nuevoRol) {
+        try {
+            if (Number(id) === 1) {
+                return { success: false, message: 'No se puede modificar el rol del administrador principal.' };
+            }
+            if (nuevoRol !== 'admin' && nuevoRol !== 'user') {
+                return { success: false, message: 'Rol no válido.' };
+            }
+
+            await UserModel.updateRol(id, nuevoRol);
+            return { success: true };
+        } catch (error) {
+            console.error('Error al cambiar rol:', error);
             return { success: false, message: error.message };
         }
     }

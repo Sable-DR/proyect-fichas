@@ -1,8 +1,10 @@
 :root {
     --bg-body: #f3f4f6;
-    --bg-card: white;
+    --bg-card: #ffffff;
     --text-main: #374151;
     --border-input: #d1d5db;
+    --bg-input: #ffffff;
+    --text-input: #111827;
     --hover-sidebar: #e5e7eb;
 }
 
@@ -11,6 +13,8 @@ body.dark-theme {
     --bg-card: #1f2937;
     --text-main: #f9fafb;
     --border-input: #4b5563;
+    --bg-input: #374151;
+    --text-input: #f9fafb;
     --hover-sidebar: #374151;
 }
 
@@ -34,6 +38,7 @@ header {
     border-bottom: 1px solid var(--border-input);
     background-color: var(--bg-card);
     z-index: 10;
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
 .app-container {
@@ -49,6 +54,7 @@ header {
     display: flex;
     flex-direction: column;
     padding-top: 1rem;
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
 .sidebar a {
@@ -83,6 +89,7 @@ header {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     width: 100%;
     box-sizing: border-box;
+    transition: background-color 0.3s;
 }
 
 .header-card {
@@ -92,6 +99,27 @@ header {
     margin-bottom: 2rem;
     border-bottom: 2px solid var(--border-input);
     padding-bottom: 1rem;
+}
+
+/* Inputs generales (Catálogos y formularios) */
+input[type="text"],
+input[type="password"],
+select {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border-input);
+    background-color: var(--bg-input);
+    color: var(--text-input);
+    border-radius: 5px;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #3b82f6;
 }
 
 table {
@@ -221,6 +249,7 @@ td {
 
 .modal-content {
     background-color: var(--bg-card);
+    color: var(--text-main);
     padding: 2rem;
     border-radius: 10px;
     width: 100%;
@@ -239,11 +268,8 @@ td {
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
-    border: 1px solid var(--border-input);
-    background-color: var(--bg-body);
-    color: var(--text-main);
-    border-radius: 5px;
-    box-sizing: border-box;
+    background-color: var(--bg-input);
+    color: var(--text-input);
 }
 
 .modal-buttons {
@@ -268,4 +294,148 @@ td {
 
 .btn-save {
     background-color: #3b82f6;
+}
+
+.btn-role {
+    background-color: #8b5cf6;
+}
+
+.btn-role:hover {
+    background-color: #7c3aed;
+}
+
+/* Botón de cambio de rol */
+.btn-role {
+    background-color: #8b5cf6;
+}
+
+.btn-role:hover {
+    background-color: #7c3aed;
+}
+
+/* Notificaciones Toast */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    min-width: 260px;
+    max-width: 380px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: auto;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-success {
+    background-color: #10b981;
+}
+
+.toast-error {
+    background-color: #ef4444;
+}
+
+.toast-warning {
+    background-color: #f59e0b;
+}
+
+
+
+/* Selector de catálogos y lista amplia */
+.catalogos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.catalogo-card-btn {
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    border: 2px solid var(--border-input);
+    border-radius: 10px;
+    padding: 16px 18px;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color 0.2s, background-color 0.2s, transform 0.15s;
+}
+
+.catalogo-card-btn:hover {
+    background-color: var(--hover-sidebar);
+    transform: translateY(-1px);
+}
+
+.catalogo-card-btn.active {
+    border-color: #3b82f6;
+    background-color: var(--hover-sidebar);
+}
+
+.catalogo-card-titulo {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.catalogo-card-count {
+    font-size: 0.85rem;
+    opacity: 0.75;
+}
+
+.catalogo-panel-activo {
+    background-color: var(--bg-body);
+    border: 1px solid var(--border-input);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.catalogo-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-input);
+}
+
+.catalogo-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.catalogo-lista li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-input);
+    border-radius: 6px;
+    transition: background-color 0.15s;
+}
+
+.catalogo-lista li:hover {
+    background-color: var(--hover-sidebar);
 }

@@ -70,7 +70,7 @@ form.addEventListener('submit', async (e) => {
             localStorage.setItem('userRol', response.rol);
         }
 
-        window.location.href = 'dashboard.html';
+        window.location.href = '../dashboard/dashboard.html';
     } else {
         messageDiv.textContent = response.message;
     }

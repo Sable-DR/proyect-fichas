@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('api', {
     editarUsuario: (id, nuevoNombre) => ipcRenderer.invoke('editar-usuario', id, nuevoNombre),
     cambiarPassword: (id, nuevaPassword) => ipcRenderer.invoke('cambiar-password', id, nuevaPassword),
     cambiarEstadoUsuario: (id, estado) => ipcRenderer.invoke('cambiar-estado-usuario', id, estado),
+    cambiarRolUsuario: (id, nuevoRol) => ipcRenderer.invoke('cambiar-rol-usuario', id, nuevoRol),
 
     // --- CATÁLOGOS DINÁMICOS ---
     obtenerCatalogos: () => ipcRenderer.invoke('obtener-catalogos'),
@@ -21,4 +22,7 @@ contextBridge.exposeInMainWorld('api', {
     agregarColonia: (nombre) => ipcRenderer.invoke('agregar-colonia', nombre),
     eliminarColonia: (id) => ipcRenderer.invoke('eliminar-colonia', id),
     actualizarFicha: (datosFicha) => ipcRenderer.invoke('actualizar-ficha', datosFicha),
+
+    // --- RESPALDO DE BASE DE DATOS ---
+    respaldarBD: () => ipcRenderer.invoke('respaldar-bd'),
 });

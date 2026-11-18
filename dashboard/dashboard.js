@@ -1,7 +1,7 @@
 if (localStorage.getItem('tema') === 'oscuro') document.body.classList.add('dark-theme');
 
 const userId = localStorage.getItem('userId');
-if (!userId) window.location.href = 'index.html';
+if (!userId) window.location.href = '../login/index.html';
 
 const currentFullName = localStorage.getItem('userFullName');
 const currentUserName = localStorage.getItem('userName');
@@ -15,6 +15,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const headerUser = document.getElementById('header-username');
     if (headerUser) headerUser.textContent = 'Hola, ' + capturista;
 
+    // --- CONTROL DE ACCESO AL PANEL DE ADMINISTRADOR ---
+    const btnPanelAdmin = document.getElementById('btn-admin') || document.querySelector('#dropdown-menu a[href="admin.html"]');
+    const rolUsuario = (localStorage.getItem('userRol') || '').toLowerCase();
+
+    if (btnPanelAdmin) {
+        if (rolUsuario === 'admin') {
+            btnPanelAdmin.style.display = 'block';
+        } else {
+            btnPanelAdmin.remove();
+        }
+    }
+
     if (currentRol === 'admin') {
         const btnAdmin = document.getElementById('btn-admin');
         if (btnAdmin) btnAdmin.style.display = 'block';
@@ -26,6 +38,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         || document.getElementById('btn-cerrar-sesion')
         || document.querySelector('#dropdown-menu a.text-danger');
 
+    // --- MODO OSCURO / CLARO SINCRONIZADO CON LOGIN ---
+    const btnThemeDashboard = document.getElementById('btn-theme-dashboard');
+    const iconoTemaDashboard = document.getElementById('icono-tema-dashboard');
+    const textoTemaDashboard = document.getElementById('texto-tema-dashboard');
+
+    function aplicarTemaDashboard(esOscuro) {
+        if (esOscuro) {
+            document.body.classList.add('dark-theme');
+            if (iconoTemaDashboard) iconoTemaDashboard.className = 'fa-solid fa-sun';
+            if (textoTemaDashboard) textoTemaDashboard.textContent = 'Modo Claro';
+        } else {
+            document.body.classList.remove('dark-theme');
+            if (iconoTemaDashboard) iconoTemaDashboard.className = 'fa-solid fa-moon';
+            if (textoTemaDashboard) textoTemaDashboard.textContent = 'Modo Oscuro';
+        }
+    }
+
+    // 1. Aplicar al cargar según la preferencia guardada en login.js
+    aplicarTemaDashboard(localStorage.getItem('tema') === 'oscuro');
+
+    // 2. Alternar tema al hacer clic en la opción del menú
+    if (btnThemeDashboard) {
+        btnThemeDashboard.addEventListener('click', (e) => {
+            e.preventDefault();
+            const activarOscuro = !document.body.classList.contains('dark-theme');
+            localStorage.setItem('tema', activarOscuro ? 'oscuro' : 'claro');
+            aplicarTemaDashboard(activarOscuro);
+        });
+    }
+
     if (btnCerrarSesion) {
         btnCerrarSesion.addEventListener('click', (e) => {
             e.preventDefault();
@@ -35,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             localStorage.removeItem('userName');
             localStorage.removeItem('userRol');
 
-            window.location.href = 'index.html';
+            window.location.href = '../login/index.html';
         });
     }
 
@@ -655,19 +697,52 @@ function crearTarjetaFicha(ficha) {
     return tarjeta;
 }
 
-if (document.getElementById('btn-cerrar-modal')) {
-    document.getElementById('btn-cerrar-modal').addEventListener('click', () => {
-        document.getElementById('modal-ficha').style.display = 'none';
-    });
-}
+// Cierre unificado para los modales de Detalles Completos y Edición
+document.addEventListener('click', (e) => {
+    const clicEnCerrar = e.target.closest('.modal-close-btn, #btn-cerrar-modal, #btn-cerrar-modal-ficha, #btn-cerrar-modal-editar');
 
-window.addEventListener('click', (e) => {
-    const modal = document.getElementById('modal-ficha');
-    if (e.target === modal) {
-        modal.style.display = 'none';
+    // 1. Modal de Detalles Completos
+    const modalDetalles = document.getElementById('modal-ficha');
+    if (modalDetalles && window.getComputedStyle(modalDetalles).display !== 'none') {
+        if (clicEnCerrar || e.target === modalDetalles) {
+            modalDetalles.style.display = 'none';
+            return;
+        }
+    }
+
+    // 2. Modal de Edición
+    const modalEditar = document.getElementById('modal-editar-ficha');
+    if (modalEditar && window.getComputedStyle(modalEditar).display !== 'none') {
+        if (clicEnCerrar || e.target === modalEditar) {
+            modalEditar.style.display = 'none';
+            if (typeof fichaEditandoActual !== 'undefined') {
+                fichaEditandoActual = null;
+            }
+        }
     }
 });
 
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+
+    // Si el buscador Quick-Pick está abierto, no cerrar los modales de fondo
+    const quickPick = document.getElementById('quickpick-modal');
+    if (quickPick && quickPick.classList.contains('active')) return;
+
+    const modalEditar = document.getElementById('modal-editar-ficha');
+    if (modalEditar && window.getComputedStyle(modalEditar).display !== 'none') {
+        modalEditar.style.display = 'none';
+        if (typeof fichaEditandoActual !== 'undefined') {
+            fichaEditandoActual = null;
+        }
+        return;
+    }
+
+    const modalDetalles = document.getElementById('modal-ficha');
+    if (modalDetalles && window.getComputedStyle(modalDetalles).display !== 'none') {
+        modalDetalles.style.display = 'none';
+    }
+});
 
 let mapForm;
 let markerForm;

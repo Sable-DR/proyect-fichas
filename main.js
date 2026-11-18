@@ -1,10 +1,83 @@
-const { app, BrowserWindow, ipcMain, Menu, MenuItem, session } = require('electron');
+const fs = require('fs');
 const path = require('path');
+const { app, BrowserWindow, ipcMain, Menu, MenuItem, session, dialog } = require('electron');
 const db = require('./database.js');
 
 const AuthController = require('./controllers/AuthController');
 const FichaController = require('./controllers/FichaController');
 const CatalogoController = require('./controllers/CatalogoController');
+
+function generarRespaldoSQLite(rutaDestino) {
+  return new Promise((resolve, reject) => {
+    try {
+      // VACUUM INTO requiere que el archivo destino no exista previamente
+      if (fs.existsSync(rutaDestino)) {
+        fs.unlinkSync(rutaDestino);
+      }
+      const rutaEscapada = rutaDestino.replace(/'/g, "''");
+      db.run(`VACUUM INTO '${rutaEscapada}'`, (err) => {
+        if (err) reject(err);
+        else resolve(rutaDestino);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+// Respaldo automático diario al iniciar Electron (conserva los últimos 7)
+async function ejecutarRespaldoAutomatico() {
+  try {
+    const carpetaBackups = path.join(__dirname, 'backups');
+    if (!fs.existsSync(carpetaBackups)) {
+      fs.mkdirSync(carpetaBackups, { recursive: true });
+    }
+
+    const hoy = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const archivoHoy = path.join(carpetaBackups, `auto_fichas_${hoy}.db`);
+
+    await generarRespaldoSQLite(archivoHoy);
+
+    // Eliminar respaldos automáticos antiguos (mantener máximo 7)
+    const archivos = fs.readdirSync(carpetaBackups)
+      .filter(f => f.startsWith('auto_fichas_') && f.endsWith('.db'))
+      .sort()
+      .reverse();
+
+    archivos.slice(7).forEach(antiguo => {
+      fs.unlinkSync(path.join(carpetaBackups, antiguo));
+    });
+  } catch (error) {
+    console.error('Error en respaldo automático:', error);
+  }
+}
+
+// Manejador para el botón "Respaldar Base de Datos" en el panel Admin
+ipcMain.handle('respaldar-bd', async (event) => {
+  try {
+    const ahora = new Date();
+    const fecha = ahora.toISOString().slice(0, 10);
+    const hora = ahora.toTimeString().slice(0, 5).replace(':', '-');
+    const nombreSugerido = `respaldo_fichas_${fecha}_${hora}.db`;
+
+    const ventanaActual = BrowserWindow.fromWebContents(event.sender);
+    const { canceled, filePath } = await dialog.showSaveDialog(ventanaActual, {
+      title: 'Guardar respaldo de base de datos',
+      defaultPath: path.join(app.getPath('documents'), nombreSugerido),
+      filters: [{ name: 'Base de datos SQLite', extensions: ['db'] }]
+    });
+
+    if (canceled || !filePath) {
+      return { success: false, canceled: true };
+    }
+
+    await generarRespaldoSQLite(filePath);
+    return { success: true, filePath };
+  } catch (error) {
+    console.error('Error al respaldar BD:', error);
+    return { success: false, message: error.message };
+  }
+});
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -58,11 +131,11 @@ function createWindow() {
 
   win.maximize();
 
-  win.loadFile('index.html');
+  win.loadFile('login/index.html');
 }
 
 app.whenReady().then(() => {
-  // Configurar corrector ortográfico en español
+  ejecutarRespaldoAutomatico();
   session.defaultSession.setSpellCheckerLanguages(['es-MX', 'es']);
 
   createWindow();
@@ -74,6 +147,7 @@ app.whenReady().then(() => {
   ipcMain.handle('cambiar-password', AuthController.cambiarPassword);
   ipcMain.handle('cambiar-estado-usuario', AuthController.cambiarEstadoUsuario);
   ipcMain.handle('registrar-usuario', AuthController.registrar);
+  ipcMain.handle('cambiar-rol-usuario', AuthController.cambiarRolUsuario);
 
   // Fichas
   ipcMain.handle('guardar-ficha', FichaController.guardarFicha);

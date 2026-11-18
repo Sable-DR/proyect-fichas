@@ -21,7 +21,7 @@ class FichaController {
 
     static async listarFichas(event, userId) {
         try {
-            const fichas = await FichaModel.getAllByUserId(userId);
+            const fichas = await FichaModel.getAll();
             return { success: true, data: fichas };
         } catch (error) {
             console.error(error);

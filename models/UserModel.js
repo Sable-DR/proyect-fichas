@@ -73,6 +73,17 @@ class UserModel {
             });
         });
     }
+
+    static updateRol(id, nuevoRol) {
+        return new Promise((resolve, reject) => {
+            db.run('UPDATE usuarios SET rol = ? WHERE id = ?', [nuevoRol, id], function (err) {
+                if (err) reject(err);
+                else resolve({ changes: this.changes });
+            });
+        });
+    }
+
+
 }
 
 module.exports = UserModel;

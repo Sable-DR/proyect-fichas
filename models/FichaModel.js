@@ -27,10 +27,10 @@ class FichaModel {
         });
     }
 
-    static getAllByUserId(userId) {
+    static getAll() {
         return new Promise((resolve, reject) => {
-            const sql = 'SELECT * FROM fichas WHERE user_id = ? ORDER BY id DESC';
-            db.all(sql, [userId], (err, rows) => {
+            const query = `SELECT * FROM fichas ORDER BY id DESC`;
+            db.all(query, [], (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {

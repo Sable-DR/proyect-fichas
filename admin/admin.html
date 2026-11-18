@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+    <header>
+        <div style="font-weight: bold; font-size: 1.2rem;">Panel de administración</div>
+
+        <div class="user-menu-container" style="position: relative;">
+            <button id="user-menu-btn" class="user-menu-btn">
+                <span id="header-username">Hola, admin</span>
+            </button>
+            <div id="dropdown-menu" class="dropdown-content">
+                <a href="../dashboard/dashboard.html" id="btn-admin">Panel principal</a>
+                <a href="#" id="btn-theme-admin"> Modo Oscuro</a>
+                <a href="#" id="btn-logout" class="text-danger">Cerrar Sesión</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-container">
+
+        <aside class="sidebar">
+            <a href="#" id="tab-usuarios" class="active">Gestión de usuarios</a>
+            <a href="#" id="tab-configuracion">Configuración del sistema</a>
+            <a href="#">Reportes de actividad</a>
+            <a href="#" id="btn-respaldar-db">Respaldar Base de Datos</a>
+        </aside>
+
+        <main class="main-content">
+
+            <div class="admin-card" id="card-usuarios">
+                <div class="header-card">
+                    <h2 style="margin:0;">Gestión de Usuarios</h2>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Usuario (Corto)</th>
+                            <th>Nombre Completo</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-usuarios">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="admin-card" id="card-configuracion" style="display: none;">
+                <div class="header-card">
+                    <h2 style="margin:0;">Configuración de Catálogos</h2>
+                </div>
+
+                <!-- 4 Tarjetas selectoras -->
+                <div class="catalogos-grid" id="selector-catalogos">
+                    <button type="button" class="catalogo-card-btn active" data-catalogo="unidades">
+                        <span class="catalogo-card-titulo">Unidades</span>
+                        <span class="catalogo-card-count" id="count-unidades">0 registros</span>
+                    </button>
+                    <button type="button" class="catalogo-card-btn" data-catalogo="auxilios">
+                        <span class="catalogo-card-titulo">Tipos de Auxilio</span>
+                        <span class="catalogo-card-count" id="count-auxilios">0 registros</span>
+                    </button>
+                    <button type="button" class="catalogo-card-btn" data-catalogo="medios">
+                        <span class="catalogo-card-titulo">Medios de Reporte</span>
+                        <span class="catalogo-card-count" id="count-medios">0 registros</span>
+                    </button>
+                    <button type="button" class="catalogo-card-btn" data-catalogo="colonias">
+                        <span class="catalogo-card-titulo">Colonias / Sectores</span>
+                        <span class="catalogo-card-count" id="count-colonias">0 registros</span>
+                    </button>
+                </div>
+
+                <!-- Panel único a todo lo ancho para el catálogo seleccionado -->
+                <div class="catalogo-panel-activo">
+                    <div class="catalogo-panel-header">
+                        <h3 id="titulo-catalogo-activo" style="margin: 0;">Unidades</h3>
+                        <input type="text" id="filtro-catalogo" placeholder="Buscar en esta lista..." autocomplete="off"
+                            style="max-width: 260px;">
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                        <input type="text" id="input-nuevo-catalogo" placeholder="Ej. Ambulancia 02" autocomplete="off">
+                        <button type="button" id="btn-add-catalogo" class="btn-action btn-toggle"
+                            style="padding: 10px 18px; font-size: 0.9rem;">Agregar</button>
+                    </div>
+
+                    <ul id="lista-catalogo-activo" class="catalogo-lista"></ul>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="mi-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-titulo">Editar</h3>
+            <input type="hidden" id="modal-id">
+            <input type="hidden" id="modal-accion">
+            <input type="text" id="modal-input" autocomplete="off">
+            <div class="modal-buttons">
+                <button id="modal-btn-cancelar" class="btn-cancel">Cancelar</button>
+                <button id="modal-btn-guardar" class="btn-save">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación (reemplaza confirm() nativo) -->
+    <div id="modal-confirm" class="modal">
+        <div class="modal-content" style="max-width: 360px;">
+            <h3 id="confirm-titulo" style="margin-bottom: 0.75rem;">Confirmar acción</h3>
+            <p id="confirm-mensaje" style="margin: 0 0 1.5rem 0; font-size: 0.95rem; line-height: 1.4; opacity: 0.9;">
+            </p>
+            <div class="modal-buttons">
+                <button type="button" id="confirm-btn-cancelar" class="btn-cancel">Cancelar</button>
+                <button type="button" id="confirm-btn-aceptar" class="btn-save">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor de notificaciones Toast (reemplaza alert() nativo) -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="admin-utils.js"></script>
+    <script src="admin-usuarios.js"></script>
+    <script src="admin-catalogos.js"></script>
+    <script src="admin.js"></script>
+
+</body>
+
+</html>
