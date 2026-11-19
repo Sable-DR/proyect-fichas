@@ -79,6 +79,27 @@ ipcMain.handle('respaldar-bd', async (event) => {
   }
 });
 
+ipcMain.handle('exportar-csv', async (event, contenido, nombreSugerido) => {
+  try {
+    const ventanaActual = BrowserWindow.fromWebContents(event.sender);
+    const { canceled, filePath } = await dialog.showSaveDialog(ventanaActual, {
+      title: 'Exportar reporte de fichas a Excel (CSV)',
+      defaultPath: path.join(app.getPath('documents'), nombreSugerido || 'reporte_fichas.csv'),
+      filters: [{ name: 'Archivo CSV (Excel)', extensions: ['csv'] }]
+    });
+
+    if (canceled || !filePath) {
+      return { success: false, canceled: true };
+    }
+
+    fs.writeFileSync(filePath, contenido, 'utf8');
+    return { success: true, filePath };
+  } catch (error) {
+    console.error('Error al exportar CSV:', error);
+    return { success: false, message: error.message };
+  }
+});
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 800,
