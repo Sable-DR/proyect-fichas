@@ -134,7 +134,7 @@ function inicializarHeaderYMenu() {
     // Control de acceso al Panel de Administrador
     const btnPanelAdmin = document.getElementById('btn-admin') || document.querySelector('#dropdown-menu a[href*="admin.html"]');
     if (btnPanelAdmin) {
-        if (currentRol === 'admin') {
+        if (currentRol === 'admin' || currentRol === 'superadmin') {
             btnPanelAdmin.style.display = 'block';
         } else {
             btnPanelAdmin.remove();

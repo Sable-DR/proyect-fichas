@@ -25,6 +25,9 @@
 
     async function cargarUsuarios() {
         const response = await window.api.obtenerUsuarios();
+        const rolActual = localStorage.getItem('userRol');
+        const idActual = String(localStorage.getItem('userId'));
+        const soySuperAdmin = rolActual === 'superadmin';
 
         if (response.success) {
             tabla.innerHTML = '';
@@ -32,19 +35,53 @@
             response.data.forEach(user => {
                 const tr = document.createElement('tr');
                 const estadoTexto = user.activo ? '🟢 Activo' : '🔴 Inactivo';
-                const esAdmin = user.rol === 'admin';
-                const rolBadge = esAdmin ? '<span class="badge-admin">Admin</span>' : '<span class="badge-user">User</span>';
 
-                const nuevoRol = esAdmin ? 'user' : 'admin';
-                const textoBtnRol = esAdmin ? 'Quitar Admin' : 'Hacer Admin';
+                const targetEsSuperAdmin = user.rol === 'superadmin';
+                const targetEsAdmin = user.rol === 'admin';
+                const esMiPropioUsuario = String(user.id) === idActual;
+
+                let rolBadge = '<span class="badge-user">User</span>';
+                if (targetEsSuperAdmin) {
+                    rolBadge = '<span class="badge-admin" style="background-color: #7c3aed;">SuperAdmin</span>';
+                } else if (targetEsAdmin) {
+                    rolBadge = '<span class="badge-admin">Admin</span>';
+                }
+
+                const nuevoRol = targetEsAdmin ? 'user' : 'admin';
+                const textoBtnRol = targetEsAdmin ? 'Quitar Admin' : 'Hacer Admin';
 
                 const toggleAction = user.activo ? 0 : 1;
                 const toggleColorClass = user.activo ? 'btn-disable' : 'btn-toggle';
                 const toggleBtnText = user.activo ? 'Desactivar' : 'Activar';
-                const isSuperAdmin = Number(user.id) === 1;
 
                 const usernameSeguro = escaparHTML(user.username);
                 const nombreSeguro = escaparHTML(user.nombre_completo || 'N/A');
+
+                let botonesAccion = '';
+
+                if (soySuperAdmin) {
+                    botonesAccion += `
+                        <button type="button" class="btn-action btn-edit" data-accion="editar-nombre" data-id="${user.id}" data-username="${usernameSeguro}">Nombre Corto</button>
+                        <button type="button" class="btn-action btn-pass" data-accion="cambiar-pass" data-id="${user.id}" data-username="${usernameSeguro}">Contraseña</button>
+                    `;
+                    if (!targetEsSuperAdmin && !esMiPropioUsuario) {
+                        botonesAccion += `
+                            <button type="button" class="btn-action btn-role" data-accion="cambiar-rol" data-id="${user.id}" data-rol="${nuevoRol}" data-username="${usernameSeguro}">${textoBtnRol}</button>
+                            <button type="button" class="btn-action ${toggleColorClass}" data-accion="toggle-estado" data-id="${user.id}" data-estado="${toggleAction}" data-username="${usernameSeguro}">${toggleBtnText}</button>
+                        `;
+                    }
+                } else {
+                    // Vista para Admin estándar: solo gestiona operadores ('user')
+                    if (!targetEsSuperAdmin && !targetEsAdmin) {
+                        botonesAccion += `
+                            <button type="button" class="btn-action btn-edit" data-accion="editar-nombre" data-id="${user.id}" data-username="${usernameSeguro}">Nombre Corto</button>
+                            <button type="button" class="btn-action btn-pass" data-accion="cambiar-pass" data-id="${user.id}" data-username="${usernameSeguro}">Contraseña</button>
+                            <button type="button" class="btn-action ${toggleColorClass}" data-accion="toggle-estado" data-id="${user.id}" data-estado="${toggleAction}" data-username="${usernameSeguro}">${toggleBtnText}</button>
+                        `;
+                    } else {
+                        botonesAccion = `<span style="color: #9ca3af; font-size: 0.82rem; font-style: italic;">Protegido</span>`;
+                    }
+                }
 
                 tr.innerHTML = `
                     <td>${user.id}</td>
@@ -52,12 +89,7 @@
                     <td>${nombreSeguro}</td>
                     <td>${rolBadge}</td>
                     <td>${estadoTexto}</td>
-                    <td>
-                        <button type="button" class="btn-action btn-edit" data-accion="editar-nombre" data-id="${user.id}" data-username="${usernameSeguro}">Nombre Corto</button>
-                        <button type="button" class="btn-action btn-pass" data-accion="cambiar-pass" data-id="${user.id}" data-username="${usernameSeguro}">Contraseña</button>
-                        ${!isSuperAdmin ? `<button type="button" class="btn-action btn-role" data-accion="cambiar-rol" data-id="${user.id}" data-rol="${nuevoRol}" data-username="${usernameSeguro}">${textoBtnRol}</button>` : ''}
-                        ${!isSuperAdmin ? `<button type="button" class="btn-action ${toggleColorClass}" data-accion="toggle-estado" data-id="${user.id}" data-estado="${toggleAction}" data-username="${usernameSeguro}">${toggleBtnText}</button>` : ''}
-                    </td>
+                    <td>${botonesAccion}</td>
                 `;
                 tabla.appendChild(tr);
             });

@@ -1,5 +1,6 @@
-// Guardia de acceso solo para administradores
-if (!localStorage.getItem('userId') || localStorage.getItem('userRol') !== 'admin') {
+// Guardia de acceso para administradores y superadministradores
+const rolSesion = localStorage.getItem('userRol');
+if (!localStorage.getItem('userId') || (rolSesion !== 'admin' && rolSesion !== 'superadmin')) {
     window.location.href = '../dashboard/dashboard.html';
 }
 

@@ -60,6 +60,16 @@ class AuthController {
 
     static async cambiarEstadoUsuario(event, id, estado) {
         try {
+            const usuarios = await UserModel.getAll();
+            const targetUser = usuarios.find(u => Number(u.id) === Number(id));
+
+            if (!targetUser) {
+                return { success: false, message: 'Usuario no encontrado.' };
+            }
+            if (targetUser.rol === 'superadmin' && Number(estado) === 0) {
+                return { success: false, message: 'No se puede desactivar una cuenta de Super Administrador.' };
+            }
+
             await UserModel.toggleStatus(id, estado);
             return { success: true };
         } catch (error) {
@@ -87,8 +97,14 @@ class AuthController {
 
     static async cambiarRolUsuario(event, id, nuevoRol) {
         try {
-            if (Number(id) === 1) {
-                return { success: false, message: 'No se puede modificar el rol del administrador principal.' };
+            const usuarios = await UserModel.getAll();
+            const targetUser = usuarios.find(u => Number(u.id) === Number(id));
+
+            if (!targetUser) {
+                return { success: false, message: 'Usuario no encontrado.' };
+            }
+            if (targetUser.rol === 'superadmin') {
+                return { success: false, message: 'No se puede modificar el rol de un Super Administrador.' };
             }
             if (nuevoRol !== 'admin' && nuevoRol !== 'user') {
                 return { success: false, message: 'Rol no válido.' };
