@@ -100,6 +100,55 @@ ipcMain.handle('exportar-csv', async (event, contenido, nombreSugerido) => {
   }
 });
 
+
+ipcMain.handle('exportar-pdf', async (event, htmlContenido, nombreSugerido) => {
+  let ventanaPDF = null;
+  let rutaTempHTML = null;
+
+  try {
+    const ventanaActual = BrowserWindow.fromWebContents(event.sender);
+    const { canceled, filePath } = await dialog.showSaveDialog(ventanaActual, {
+      title: 'Guardar reporte estadístico en PDF',
+      defaultPath: path.join(app.getPath('documents'), nombreSugerido || 'estadisticas_actividad.pdf'),
+      filters: [{ name: 'Documento PDF', extensions: ['pdf'] }]
+    });
+
+    if (canceled || !filePath) {
+      return { success: false, canceled: true };
+    }
+
+    rutaTempHTML = path.join(app.getPath('temp'), `reporte_temp_${Date.now()}.html`);
+    fs.writeFileSync(rutaTempHTML, htmlContenido, 'utf8');
+
+    ventanaPDF = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        offscreen: true
+      }
+    });
+
+    await ventanaPDF.loadFile(rutaTempHTML);
+
+    const pdfBuffer = await ventanaPDF.webContents.printToPDF({
+      printBackground: true,
+      pageSize: 'Letter'
+    });
+
+    fs.writeFileSync(filePath, pdfBuffer);
+    return { success: true, filePath };
+  } catch (error) {
+    console.error('Error al exportar PDF:', error);
+    return { success: false, message: error.message };
+  } finally {
+    if (ventanaPDF && !ventanaPDF.isDestroyed()) {
+      ventanaPDF.destroy();
+    }
+    if (rutaTempHTML && fs.existsSync(rutaTempHTML)) {
+      try { fs.unlinkSync(rutaTempHTML); } catch (_) { }
+    }
+  }
+});
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 800,

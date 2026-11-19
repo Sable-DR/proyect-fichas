@@ -9,11 +9,64 @@
     const { resetearMapaFormulario, initOCentrarMapaEdicion } = window.DashboardMapas;
     const { abrirQuickPick } = window.DashboardCatalogos;
 
+    const rolActual = localStorage.getItem('userRol');
+    const esPrivilegiado = rolActual === 'admin' || rolActual === 'superadmin';
+
     const contenedorFichas = document.getElementById('contenedor-fichas');
     let fichasMesActual = [];
     let fichasVisiblesActuales = [];
     let estadoFiltro = 'TODO';
     let filtrosInicializados = false;
+    let periodoActivo = '';
+
+    function obtenerPeriodoActualPorDefecto() {
+        const ahora = new Date();
+        const diaActual = ahora.getDate();
+        const horaActual = ahora.getHours();
+        let mesObjetivo = ahora.getMonth();
+        let anoObjetivo = ahora.getFullYear();
+
+        if (diaActual === 1 && horaActual < 3) {
+            mesObjetivo = ahora.getMonth() - 1;
+            if (mesObjetivo < 0) {
+                mesObjetivo = 11;
+                anoObjetivo--;
+            }
+        }
+
+        const mesFormateado = String(mesObjetivo + 1).padStart(2, '0');
+        return `${anoObjetivo}-${mesFormateado}`;
+    }
+
+    function obtenerPeriodoDeFicha(ficha) {
+        if (ficha.fecha && ficha.fecha.length >= 7) {
+            return ficha.fecha.substring(0, 7);
+        }
+        if (ficha.fecha_creacion) {
+            const fechaObj = new Date(ficha.fecha_creacion);
+            if (!Number.isNaN(fechaObj.getTime())) {
+                const ano = fechaObj.getFullYear();
+                const mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
+                return `${ano}-${mes}`;
+            }
+        }
+        return '';
+    }
+
+    function inicializarSelectorMesAdmin() {
+        const contenedorMes = document.getElementById('contenedor-filtro-mes');
+        const inputMes = document.getElementById('filtro-mes');
+
+        if (!esPrivilegiado) {
+            if (contenedorMes) contenedorMes.remove();
+            return;
+        }
+
+        if (contenedorMes) contenedorMes.style.display = 'flex';
+        if (inputMes && !inputMes.value) {
+            inputMes.value = obtenerPeriodoActualPorDefecto();
+        }
+    }
 
     function actualizarContadores(fichas) {
         let pendientes = 0;
@@ -132,14 +185,12 @@
         const termino = inputBusqueda ? inputBusqueda.value.toLowerCase().trim() : '';
         const fechaSeleccionada = inputFecha ? inputFecha.value : '';
 
-        const mesActivo = fichasMesActual.length > 0 && fichasMesActual[0].fecha
-            ? fichasMesActual[0].fecha.substring(0, 7)
-            : new Date().toISOString().substring(0, 7);
+        const mesRef = periodoActivo || obtenerPeriodoActualPorDefecto();
 
         if (fechaSeleccionada) {
             const mesSeleccionado = fechaSeleccionada.substring(0, 7);
-            if (mesSeleccionado !== mesActivo) {
-                mostrarNotificacion(`⚠️ La fecha (${fechaSeleccionada}) no pertenece al mes en turno (${mesActivo}).`, 'warning');
+            if (mesSeleccionado !== mesRef) {
+                mostrarNotificacion(`⚠️ La fecha (${fechaSeleccionada}) no pertenece al periodo seleccionado (${mesRef}).`, 'warning');
                 inputFecha.value = '';
                 aplicarFiltros();
                 return;
@@ -168,7 +219,6 @@
 
         fichasVisiblesActuales = fichasFiltradas;
         renderizarFichasFiltradas(fichasFiltradas);
-
     }
 
     function iniciarFiltrosYBusqueda() {
@@ -181,6 +231,7 @@
         const btnPendientes = document.getElementById('filtro-pendientes');
         const inputBusqueda = document.getElementById('busqueda-fichas');
         const inputFecha = document.getElementById('filtro-fecha');
+        const inputMes = document.getElementById('filtro-mes');
 
         if (btnTodo && btnPendientes) {
             btnTodo.addEventListener('click', () => {
@@ -198,6 +249,16 @@
             });
         }
 
+        if (inputMes && esPrivilegiado) {
+            inputMes.addEventListener('change', () => {
+                if (!inputMes.value) {
+                    inputMes.value = obtenerPeriodoActualPorDefecto();
+                }
+                if (inputFecha) inputFecha.value = '';
+                cargarFichas();
+            });
+        }
+
         if (inputBusqueda) inputBusqueda.addEventListener('input', aplicarFiltros);
         if (inputFecha) inputFecha.addEventListener('change', aplicarFiltros);
 
@@ -206,41 +267,35 @@
     }
 
     async function cargarFichas() {
+        inicializarSelectorMesAdmin();
+
+        const inputMes = document.getElementById('filtro-mes');
+        const periodoObjetivo = (esPrivilegiado && inputMes && inputMes.value)
+            ? inputMes.value
+            : obtenerPeriodoActualPorDefecto();
+
+        periodoActivo = periodoObjetivo;
+
         const respuesta = await window.api.obtenerFichas(state.userId);
         contenedorFichas.innerHTML = '';
 
         if (respuesta.success && respuesta.data.length > 0) {
-            const ahora = new Date();
-            const diaActual = ahora.getDate();
-            const horaActual = ahora.getHours();
-            let mesObjetivo = ahora.getMonth();
-            let anoObjetivo = ahora.getFullYear();
-
-            if (diaActual === 1 && horaActual < 3) {
-                mesObjetivo = ahora.getMonth() - 1;
-                if (mesObjetivo < 0) {
-                    mesObjetivo = 11;
-                    anoObjetivo--;
-                }
-            }
-
-            fichasMesActual = respuesta.data.filter(ficha => {
-                const fechaFicha = ficha.fecha ? new Date(ficha.fecha) : new Date(ficha.fecha_creacion);
-                return fechaFicha.getMonth() === mesObjetivo && fechaFicha.getFullYear() === anoObjetivo;
-            });
+            fichasMesActual = respuesta.data.filter(ficha => obtenerPeriodoDeFicha(ficha) === periodoObjetivo);
 
             if (fichasMesActual.length > 0) {
                 actualizarContadores(fichasMesActual);
                 iniciarFiltrosYBusqueda();
             } else {
                 fichasVisiblesActuales = [];
-                contenedorFichas.innerHTML = '<p style="grid-column: 1 / -1; color: #6b7280; text-align: center;">No hay fichas registradas para este periodo.</p>';
+                iniciarFiltrosYBusqueda();
+                contenedorFichas.innerHTML = `<p style="grid-column: 1 / -1; color: #6b7280; text-align: center; padding: 20px;">No hay fichas registradas para el periodo ${periodoObjetivo}.</p>`;
                 reiniciarContadores();
             }
         } else {
             fichasMesActual = [];
             fichasVisiblesActuales = [];
-            contenedorFichas.innerHTML = '<p style="grid-column: 1 / -1; color: #6b7280; text-align: center;">Aún no hay fichas en tu turno.</p>';
+            iniciarFiltrosYBusqueda();
+            contenedorFichas.innerHTML = '<p style="grid-column: 1 / -1; color: #6b7280; text-align: center; padding: 20px;">Aún no hay fichas registradas.</p>';
             reiniciarContadores();
         }
     }
@@ -431,7 +486,7 @@ ${ficha.direccion}, ${ficha.colonia} Reporta ${ficha.medio} ${ficha.descripcion}
         const inputFecha = document.getElementById('filtro-fecha');
         const sufijoFecha = (inputFecha && inputFecha.value)
             ? inputFecha.value
-            : new Date().toISOString().slice(0, 10);
+            : (periodoActivo || new Date().toISOString().slice(0, 10));
 
         const respuesta = await window.api.exportarCSV(contenidoCSV, `reporte_fichas_${sufijoFecha}.csv`);
 
@@ -451,26 +506,6 @@ ${ficha.direccion}, ${ficha.colonia} Reporta ${ficha.medio} ${ficha.descripcion}
             btnExportarCSV.addEventListener('click', exportarFichasCSV);
         }
 
-        // Cierre unificado de modales
-        document.addEventListener('click', (e) => {
-            const clicEnCerrar = e.target.closest('.modal-close-btn, #btn-cerrar-modal, #btn-cerrar-modal-ficha, #btn-cerrar-modal-editar');
-
-            const modalDetalles = document.getElementById('modal-ficha');
-            if (modalDetalles && window.getComputedStyle(modalDetalles).display !== 'none') {
-                if (clicEnCerrar || e.target === modalDetalles) {
-                    modalDetalles.style.display = 'none';
-                    return;
-                }
-            }
-
-            const modalEditar = document.getElementById('modal-editar-ficha');
-            if (modalEditar && window.getComputedStyle(modalEditar).display !== 'none') {
-                if (clicEnCerrar || e.target === modalEditar) {
-                    modalEditar.style.display = 'none';
-                    state.fichaEditandoActual = null;
-                }
-            }
-        });
         // Cierre unificado de modales
         document.addEventListener('click', (e) => {
             const clicEnCerrar = e.target.closest('.modal-close-btn, #btn-cerrar-modal, #btn-cerrar-modal-ficha, #btn-cerrar-modal-editar');
@@ -605,6 +640,11 @@ ${ficha.direccion}, ${ficha.colonia} Reporta ${ficha.medio} ${ficha.descripcion}
                     if (document.getElementById('estado')) document.getElementById('estado').value = 'PENDIENTE';
                     actualizarOpcionesVeracidad();
 
+                    const inputMes = document.getElementById('filtro-mes');
+                    if (esPrivilegiado && inputMes && fFecha && fFecha.length >= 7) {
+                        inputMes.value = fFecha.substring(0, 7);
+                    }
+
                     mostrarNotificacion('✓ Ficha guardada exitosamente.', 'success');
                     cargarFichas();
                 } else {
@@ -649,6 +689,11 @@ ${ficha.direccion}, ${ficha.colonia} Reporta ${ficha.medio} ${ficha.descripcion}
 
                         if (document.getElementById('estado')) document.getElementById('estado').value = 'PENDIENTE';
                         actualizarOpcionesVeracidad();
+
+                        const inputMes = document.getElementById('filtro-mes');
+                        if (esPrivilegiado && inputMes && fFecha && fFecha.length >= 7) {
+                            inputMes.value = fFecha.substring(0, 7);
+                        }
 
                         mostrarNotificacion('Ficha rápida registrada como PENDIENTE.', 'success');
                         cargarFichas();

@@ -144,8 +144,14 @@
                         <input type="text" id="busqueda-fichas" placeholder="Buscar por tipo, dirección, colonia...">
                     </div>
 
+                    <div class="month-box" id="contenedor-filtro-mes" style="display: none;">
+                        <label for="filtro-mes" class="filtro-label">Mes:</label>
+                        <input type="month" id="filtro-mes" class="input-mes-filtro" title="Cambiar mes consultado">
+                    </div>
+
                     <div class="date-box">
-                        <input type="date" id="filtro-fecha" class="input-fecha-filtro">
+                        <label for="filtro-fecha" class="filtro-label">Día:</label>
+                        <input type="date" id="filtro-fecha" class="input-fecha-filtro" title="Filtrar por un día específico">
                     </div>
 
                     <button type="button" id="btn-exportar-csv" class="btn-filter"

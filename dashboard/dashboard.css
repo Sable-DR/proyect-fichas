@@ -687,3 +687,79 @@ header {
     background-color: #f59e0b;
     color: #ffffff;
 }
+
+/* --- SELECTORES DE MES Y DÍA EN BARRA DE FILTROS --- */
+.month-box,
+.date-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: var(--bg-body);
+    border: 1px solid var(--border-input);
+    border-radius: 6px;
+    padding: 0 10px;
+    height: 36px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    transition: border-color 0.2s;
+}
+
+.month-box:hover,
+.date-box:hover {
+    border-color: var(--primary-color);
+}
+
+.filtro-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-main);
+    opacity: 0.75;
+    margin: 0;
+    user-select: none;
+}
+
+.input-mes-filtro {
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    color-scheme: light;
+}
+
+body.dark-theme .input-mes-filtro {
+    color-scheme: dark;
+}
+
+.input-fecha-filtro {
+    background: transparent;
+    border: none;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 4px;
+    cursor: pointer;
+    color: transparent;
+    color-scheme: light;
+}
+
+.input-fecha-filtro::-webkit-datetime-edit {
+    display: none;
+}
+
+.input-fecha-filtro::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    margin: 0;
+    filter: none;
+}
+
+body.dark-theme .input-fecha-filtro {
+    color-scheme: dark;
+}
+
+body.dark-theme .input-fecha-filtro::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}

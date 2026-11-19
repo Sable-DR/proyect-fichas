@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
     cambiarEstadoUsuario: (id, estado) => ipcRenderer.invoke('cambiar-estado-usuario', id, estado),
     cambiarRolUsuario: (id, nuevoRol) => ipcRenderer.invoke('cambiar-rol-usuario', id, nuevoRol),
     exportarCSV: (contenido, nombreSugerido) => ipcRenderer.invoke('exportar-csv', contenido, nombreSugerido),
+    exportarPDF: (htmlContenido, nombreSugerido) => ipcRenderer.invoke('exportar-pdf', htmlContenido, nombreSugerido),
 
     // --- CATÁLOGOS DINÁMICOS ---
     obtenerCatalogos: () => ipcRenderer.invoke('obtener-catalogos'),

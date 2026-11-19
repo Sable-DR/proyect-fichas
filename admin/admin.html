@@ -30,7 +30,7 @@
         <aside class="sidebar">
             <a href="#" id="tab-usuarios" class="active">Gestión de usuarios</a>
             <a href="#" id="tab-configuracion">Configuración del sistema</a>
-            <a href="#">Reportes de actividad</a>
+            <a href="#" id="tab-reportes">Reportes de actividad</a>
             <a href="#" id="btn-respaldar-db">Respaldar Base de Datos</a>
         </aside>
 
@@ -100,6 +100,187 @@
                 </div>
             </div>
 
+            <div class="admin-card" id="card-reportes" style="display: none;">
+                <div class="header-card" style="flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <h2 style="margin:0;">Reportes de Actividad</h2>
+                        <small id="reporte-subtitulo-periodo" style="opacity: 0.75;">Resumen estadístico
+                            operativo</small>
+                    </div>
+
+                    <div class="reportes-controles">
+                        <select id="reporte-modo-filtro" title="Tipo de periodo">
+                            <option value="mes" selected>Por Mes</option>
+                            <option value="rango">Rango de Fechas</option>
+                            <option value="todo">Todo el Historial</option>
+                        </select>
+
+                        <div id="grupo-filtro-mes" style="display: flex; align-items: center; gap: 6px;">
+                            <input type="month" id="reporte-mes">
+                        </div>
+
+                        <div id="grupo-filtro-rango" style="display: none; align-items: center; gap: 6px;">
+                            <input type="date" id="reporte-fecha-inicio" title="Fecha inicial">
+                            <span style="opacity: 0.7;">a</span>
+                            <input type="date" id="reporte-fecha-fin" title="Fecha final">
+                        </div>
+
+                        <button type="button" id="btn-exportar-estadisticas" class="btn-action btn-toggle"
+                            style="padding: 9px 14px; font-weight: 600;">
+                            Exportar Resumen (CSV)
+                        </button>
+
+                        <button type="button" id="btn-exportar-pdf" class="btn-action btn-disable"
+                            style="padding: 9px 14px; font-weight: 600;">
+                            Exportar PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 1. Tarjetas KPI -->
+                <div class="kpi-grid" id="reporte-kpis">
+                    <div class="kpi-box kpi-total">
+                        <span class="kpi-label">Total de Fichas</span>
+                        <span class="kpi-num" id="kpi-rep-total">0</span>
+                        <span class="kpi-sub" id="kpi-rep-total-sub">100% del periodo</span>
+                    </div>
+                    <div class="kpi-box kpi-real">
+                        <span class="kpi-label">Reportes Reales</span>
+                        <span class="kpi-num" id="kpi-rep-reales">0</span>
+                        <span class="kpi-sub" id="kpi-rep-reales-pct">0%</span>
+                    </div>
+                    <div class="kpi-box kpi-falso">
+                        <span class="kpi-label">Reportes Falsos</span>
+                        <span class="kpi-num" id="kpi-rep-falsos">0</span>
+                        <span class="kpi-sub" id="kpi-rep-falsos-pct">0%</span>
+                    </div>
+                    <div class="kpi-box kpi-canalizado">
+                        <span class="kpi-label">Canalizados</span>
+                        <span class="kpi-num" id="kpi-rep-canalizados">0</span>
+                        <span class="kpi-sub" id="kpi-rep-canalizados-pct">0%</span>
+                    </div>
+                    <div class="kpi-box kpi-pendiente">
+                        <span class="kpi-label">Pendientes</span>
+                        <span class="kpi-num" id="kpi-rep-pendientes">0</span>
+                        <span class="kpi-sub" id="kpi-rep-pendientes-pct">0%</span>
+                    </div>
+                </div>
+
+                <!-- 2. Incidencia por Tipo de Auxilio -->
+                <div class="reporte-bloque">
+                    <h3>Incidencia por Tipo de Auxilio</h3>
+                    <div class="tabla-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tipo de Auxilio</th>
+                                    <th>Total</th>
+                                    <th>Reales</th>
+                                    <th>Falsos</th>
+                                    <th>Canalizados</th>
+                                    <th>Pendientes</th>
+                                    <th>% del Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-rep-auxilios"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3 y 4. Zonas y Unidades en dos columnas -->
+                <div class="reportes-dos-columnas">
+                    <div class="reporte-bloque">
+                        <h3>Incidencia por Colonia / Sector</h3>
+                        <div class="tabla-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Colonia / Sector</th>
+                                        <th>Total</th>
+                                        <th>Reales</th>
+                                        <th>Falsos</th>
+                                        <th>Participación</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-rep-colonias"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="reporte-bloque">
+                        <h3>Productividad por Unidad</h3>
+                        <div class="tabla-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Unidad</th>
+                                        <th>Servicios</th>
+                                        <th>Efectivos</th>
+                                        <th>Falsos</th>
+                                        <th>% Efectividad</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-rep-unidades"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Medios de Reporte y Franjas Horarias -->
+                <div class="reportes-dos-columnas">
+                    <div class="reporte-bloque">
+                        <h3>Canales de Entrada (Medio)</h3>
+                        <div class="tabla-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Medio de Reporte</th>
+                                        <th>Total</th>
+                                        <th>% del Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-rep-medios"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="reporte-bloque">
+                        <h3>Demanda por Franja Horaria</h3>
+                        <div class="tabla-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Franja Horaria</th>
+                                        <th>Total</th>
+                                        <th>% del Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-rep-horarios"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Registro por Capturista -->
+                <div class="reporte-bloque" style="margin-bottom: 0;">
+                    <h3>Desempeño por Capturista</h3>
+                    <div class="tabla-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Capturista</th>
+                                    <th>Fichas Levantadas</th>
+                                    <th>Cerradas (Listo / Canalizado)</th>
+                                    <th>Pendientes</th>
+                                    <th>% Cierre</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-rep-capturistas"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -135,6 +316,7 @@
     <script src="admin-utils.js"></script>
     <script src="admin-usuarios.js"></script>
     <script src="admin-catalogos.js"></script>
+    <script src="admin-estadisticas.js"></script>
     <script src="admin.js"></script>
 
 </body>

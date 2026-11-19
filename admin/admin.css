@@ -439,3 +439,141 @@ td {
 .catalogo-lista li:hover {
     background-color: var(--hover-sidebar);
 }
+
+/* --- MÓDULO DE REPORTES Y ESTADÍSTICAS --- */
+.reportes-controles {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+input[type="month"],
+input[type="date"] {
+    padding: 8px 10px;
+    border: 1px solid var(--border-input);
+    background-color: var(--bg-input);
+    color: var(--text-input);
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    color-scheme: light;
+}
+
+body.dark-theme input[type="month"],
+body.dark-theme input[type="date"] {
+    color-scheme: dark;
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.kpi-box {
+    background-color: var(--bg-body);
+    border: 1px solid var(--border-input);
+    border-left: 4px solid #3b82f6;
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.kpi-box.kpi-real {
+    border-left-color: #10b981;
+}
+
+.kpi-box.kpi-falso {
+    border-left-color: #ef4444;
+}
+
+.kpi-box.kpi-canalizado {
+    border-left-color: #6366f1;
+}
+
+.kpi-box.kpi-pendiente {
+    border-left-color: #f59e0b;
+}
+
+.kpi-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    opacity: 0.75;
+}
+
+.kpi-num {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.kpi-sub {
+    font-size: 0.8rem;
+    opacity: 0.75;
+}
+
+.reporte-bloque {
+    background-color: var(--bg-body);
+    border: 1px solid var(--border-input);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+}
+
+.reporte-bloque h3 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-input);
+}
+
+.reportes-dos-columnas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 18px;
+    margin-bottom: 20px;
+}
+
+.reportes-dos-columnas .reporte-bloque {
+    margin-bottom: 0;
+}
+
+.tabla-scroll {
+    max-height: 340px;
+    overflow-y: auto;
+}
+
+.tabla-scroll th {
+    position: sticky;
+    top: 0;
+    background-color: var(--bg-card);
+    z-index: 1;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+}
+
+.barra-mini-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.barra-mini-bg {
+    flex: 1;
+    height: 7px;
+    background-color: var(--border-input);
+    border-radius: 99px;
+    overflow: hidden;
+    min-width: 50px;
+}
+
+.barra-mini-fill {
+    height: 100%;
+    background-color: #3b82f6;
+    border-radius: 99px;
+}

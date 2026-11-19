@@ -31,9 +31,12 @@ const esSuperAdminSesion = localStorage.getItem('userRol') === 'superadmin';
 // Navegación entre pestañas del panel lateral
 const tabUsuarios = document.getElementById('tab-usuarios');
 const tabConfig = document.getElementById('tab-configuracion');
+const tabReportes = document.getElementById('tab-reportes');
 const btnRespaldar = document.getElementById('btn-respaldar-db');
+
 const cardUsuarios = document.getElementById('card-usuarios');
 const cardConfig = document.getElementById('card-configuracion');
+const cardReportes = document.getElementById('card-reportes');
 
 if (!esSuperAdminSesion) {
     if (tabConfig) tabConfig.remove();
@@ -41,22 +44,37 @@ if (!esSuperAdminSesion) {
     if (btnRespaldar) btnRespaldar.remove();
 }
 
+function activarPestana(tabSeleccionada, cardSeleccionada) {
+    [tabUsuarios, tabConfig, tabReportes].forEach(t => {
+        if (t) t.classList.remove('active');
+    });
+    [cardUsuarios, cardConfig, cardReportes].forEach(c => {
+        if (c) c.style.display = 'none';
+    });
+
+    if (tabSeleccionada) tabSeleccionada.classList.add('active');
+    if (cardSeleccionada) cardSeleccionada.style.display = 'block';
+}
+
 tabUsuarios.addEventListener('click', (e) => {
     e.preventDefault();
-    tabUsuarios.classList.add('active');
-    if (tabConfig) tabConfig.classList.remove('active');
-    cardUsuarios.style.display = 'block';
-    if (cardConfig) cardConfig.style.display = 'none';
+    activarPestana(tabUsuarios, cardUsuarios);
+    window.AdminUsuarios.cargarUsuarios();
 });
 
 if (tabConfig && esSuperAdminSesion) {
     tabConfig.addEventListener('click', (e) => {
         e.preventDefault();
-        tabConfig.classList.add('active');
-        tabUsuarios.classList.remove('active');
-        cardUsuarios.style.display = 'none';
-        cardConfig.style.display = 'block';
+        activarPestana(tabConfig, cardConfig);
         window.AdminCatalogos.cargarCatalogosAdmin();
+    });
+}
+
+if (tabReportes) {
+    tabReportes.addEventListener('click', (e) => {
+        e.preventDefault();
+        activarPestana(tabReportes, cardReportes);
+        window.AdminEstadisticas.cargarEstadisticas();
     });
 }
 
